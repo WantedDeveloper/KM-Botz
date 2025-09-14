@@ -177,6 +177,7 @@ async def start(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
@@ -770,6 +771,7 @@ async def link(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         if message.from_user.id != owner_id and message.from_user.id not in moderators:
             await message.reply("❌ You are not authorized to use this bot.")
@@ -845,6 +847,7 @@ async def batch(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         if message.from_user.id != owner_id and message.from_user.id not in moderators:
             return await message.reply("❌ You are not authorized to use this bot.")
@@ -1026,6 +1029,7 @@ async def broadcast(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         if message.from_user.id != owner_id and message.from_user.id not in moderators:
             await message.reply("❌ You are not authorized to use this bot.")
@@ -1141,6 +1145,7 @@ async def stats(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         if message.from_user.id != owner_id and message.from_user.id not in moderators:
             await message.reply("❌ You are not authorized to use this bot.")
@@ -1190,6 +1195,7 @@ async def contact(client, message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         if message.reply_to_message:
             c_msg = message.reply_to_message
@@ -1288,6 +1294,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
 
         data = query.data
 
@@ -1518,6 +1525,7 @@ async def message_capture(client: Client, message: Message):
 
         owner_id = clone.get("user_id")
         moderators = clone.get("moderators", [])
+        moderators = [int(m) for m in moderators]
         word_filter = clone.get("word_filter", False)
         random_caption = clone.get("random_caption", False)
         header = clone.get("header", None)
@@ -1574,7 +1582,7 @@ async def message_capture(client: Client, message: Message):
 
         media_file_id = None
         media_type = None
-        if message.chat.id == -1002912952165:
+        if message.chat.id == -1003015483271:
             if not await db.is_premium(owner_id):
                 return
 
