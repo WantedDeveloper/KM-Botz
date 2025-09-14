@@ -1647,7 +1647,7 @@ async def message_capture(client: Client, message: Message):
             try:
                 await message.react(emoji=random.choice(script.REACTIONS), big=True)
             except:
-                pass
+                print(f"⚠️ Auto-react failed: {e}")
 
             if client not in CLONE_ME or CLONE_ME[client] is None:
                 try:
