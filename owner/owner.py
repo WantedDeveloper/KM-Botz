@@ -3168,7 +3168,7 @@ async def message_capture(client: Client, message: Message):
                     ADD_FSUB[user_id]["name"] = ch_name
                     ADD_FSUB[user_id]["link"] = ch_link
                     ADD_FSUB[user_id]["step"] = "target"
-                    await orig_msg.edit_text(f"✅ Channel saved: `{new_text}`\n\nNow send the target number of users.")
+                    await orig_msg.edit_text(f"✅ Channel saved: `{new_text}`\n\nNow send the target number of users.\n\nSend 0 for unlimited.")
                 elif step == "target":
                     try:
                         target = int(new_text)
