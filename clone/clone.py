@@ -978,6 +978,14 @@ async def batch(client, message):
         )
         print(f"⚠️ Clone Batch Error: {e}")
 
+async def get_short_link(user, link):
+    base_site = user["base_site"]
+    api_key = user["shortener_api"]
+    response = requests.get(f"https://{base_site}/api?api={api_key}&url={link}")
+    data = response.json()
+    if data["status"] == "success" or rget.status_code == 200:
+        return data["shortenedUrl"]
+
 @Client.on_message(filters.command("shortener") & filters.private)
 async def shorten_handler(client: Client, message: Message):
     try:
@@ -1618,7 +1626,7 @@ async def message_capture(client: Client, message: Message):
                     SHORTEN_STATE[user_id] = {"step": 1}
                     return await message.reply("❌ Base site or API missing. Let's start over.")
 
-                short_link = f"{base_site}/short?api={api_key}&url={long_link}"
+                short_link = await get_short_link(user, share_link)
 
                 reply_markup = InlineKeyboardMarkup(
                     [[InlineKeyboardButton("🔁 Share URL", url=f'https://t.me/share/url?url={short_link}')]]
