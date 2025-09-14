@@ -1006,7 +1006,7 @@ async def shorten_handler(client: Client, message: Message):
 
         user_id = message.from_user.id
         cmd = message.command
-        user = await db.get_user(user_id)
+        user = await clonedb.get_user(user_id)
 
         help_text = (
             "/shorten - Start shortening links\n"
@@ -1069,7 +1069,7 @@ async def shorten_handler(client: Client, message: Message):
 
         if state["step"] == 3:
             long_link = message.text.strip()
-            user = await db.get_user(user_id)
+            user = await clonedb.get_user(user_id)
             base_site = user.get("base_site")
             api_key = user.get("shortener_api")
             if not base_site or not api_key:
