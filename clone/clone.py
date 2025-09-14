@@ -216,13 +216,14 @@ async def start(client, message):
                             if target == 0 or joined < target:
                                 item["joined"] = joined + 1
                                 updated = True
+                                continue
                     except UserNotParticipant:
-                        pass
-
+                        new_fsub_data.append(item)
                 elif mode == "request":
                     if target == 0 or joined < target:
                         item["joined"] = joined + 1
                         updated = True
+                        continue
 
                 if target != 0 and item["joined"] >= target:
                     updated = True
