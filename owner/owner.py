@@ -512,39 +512,21 @@ async def reply(client, message):
 
 async def show_clone_menu(client, message, user_id):
     try:
-        all_clones = await db.get_clones_by_user(user_id)
+        clones = await db.get_clones_by_user(user_id)
         buttons = []
 
-        user_clone = None
-        owner_clones = []
+        if clones:
+            for clone in clones:
+                bot_name = clone.get("name") or f"Clone {clone['bot_id']}"
+                buttons.append([
+                    InlineKeyboardButton(
+                        f"⚙️ {bot_name}",
+                        callback_data=f"manage_{clone['bot_id']}"
+                    )
+                ])
 
         is_vip = await db.is_premium(user_id, required_plan="vip")
-
-        for clone in all_clones:
-            clone_owner_id = clone.get("user_id")
-            moderators = [int(m) for m in clone.get("moderators", [])]
-
-            if clone_owner_id == user_id:
-                user_clone = clone
-            elif user_id in moderators:
-                owner_clones.append(clone)
-
-        for clone in owner_clones:
-            bot_name = clone.get("name") or f"Clone {clone['bot_id']}"
-            buttons.append([InlineKeyboardButton(f"⚙️ {bot_name}", callback_data=f"manage_{clone['bot_id']}")])
-
-        if user_clone:
-            bot_name = user_clone.get("name") or f"Clone {user_clone['bot_id']}"
-            buttons.append([InlineKeyboardButton(f"⚙️ {bot_name}", callback_data=f"manage_{user_clone['bot_id']}")])
-
-        show_add_clone = False
-        if is_vip:
-            show_add_clone = True
-        else:
-            if not user_clone:
-                show_add_clone = True
-
-        if show_add_clone:
+        if is_vip or not clones:
             buttons.append([InlineKeyboardButton("➕ Add Clone", callback_data="add_clone")])
 
         buttons.append([InlineKeyboardButton("⬅️ Back", callback_data="start")])
