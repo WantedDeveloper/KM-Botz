@@ -1031,7 +1031,7 @@ async def shorten_handler(client: Client, message: Message):
             return
 
         if len(cmd) == 2 and cmd[1].lower() == "none":
-            await update_user_info(user_id, {"base_site": None, "shortener_api": None})
+            await clonedb.update_user_info(user_id, {"base_site": None, "shortener_api": None})
             SHORTEN_STATE[user_id] = {"step": 1}
             return await message.reply(
                 "✅ Base site and API reset. Please send your **base site** (e.g., shortnerdomain.com)"
@@ -1596,14 +1596,14 @@ async def message_capture(client: Client, message: Message):
                 new_text = base_site.removeprefix("https://").removeprefix("http://")
                 if not domain(new_text):
                     return await message.reply("❌ Invalid domain. Send a valid base site:")
-                await update_user_info(user_id, {"base_site": new_text})
+                await clonedb.update_user_info(user_id, {"base_site": new_text})
                 state["step"] = 2
                 await message.reply("✅ Base site set. Now send your **Shortener API key**:")
                 return
 
             if state["step"] == 2:
                 api = message.text.strip()
-                await update_user_info(user_id, {"shortener_api": api})
+                await clonedb.update_user_info(user_id, {"shortener_api": api})
                 state["step"] = 3
                 await message.reply("✅ API set. Now send the **link to shorten**:")
                 return
