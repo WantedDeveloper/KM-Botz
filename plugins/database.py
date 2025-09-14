@@ -190,22 +190,16 @@ class Database:
 
     async def get_clones_by_user(self, user_id):
         clones = []
-        try:
-            user_id_int = int(user_id)
-        except ValueError:
-            return []
-
+        user_id_int = int(user_id)
         cursor = self.bot.find({
             "$or": [
                 {"user_id": {"$in": [user_id_int, str(user_id_int)]}},
                 {"moderators": {"$in": [user_id_int, str(user_id_int)]}}
             ]
         })
-
         async for clone in cursor:
             if clone.get("active", True):
                 clones.append(clone)
-
         return clones
 
     async def get_clone_by_id(self, bot_id):
