@@ -2751,7 +2751,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
         # Close
         elif data == "close":
             await query.message.delete()
-            await query.message.reply_text("❌ Menu closed. Send /start again.")
 
         else:
             await client.send_message(
