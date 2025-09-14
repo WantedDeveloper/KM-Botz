@@ -44,7 +44,7 @@ try:
     REQUEST_TO_JOIN_MODE = bool(os.environ.get('REQUEST_TO_JOIN_MODE', False)) # Set True Or False
 
     # This Is Force Subscribe Channel, also known as Auth Channel 
-    auth_channel = os.environ.get('AUTH_CHANNEL', '-1002912952165') # give your force subscribe channel id here else leave it blank
+    auth_channel = os.environ.get('AUTH_CHANNEL', '-1002945500659') # give your force subscribe channel id here else leave it blank
     AUTH_CHANNEL = int(auth_channel) if auth_channel and id_pattern.search(auth_channel) else None
 except Exception as e:
     print("⚠️ Error loading config.py:", e)
