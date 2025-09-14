@@ -510,15 +510,11 @@ async def reply(client, message):
         )
         print(f"⚠️ Reply Error: {e}")
 
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-
 async def show_clone_menu(client, message, user_id):
     try:
-        # Fetch all clones for the user (owner or moderator)
         clones = await db.get_clones_by_user(user_id)
         buttons = []
 
-        # Add a button for each clone
         if clones:
             for clone in clones:
                 bot_name = clone.get("name") or f"Clone {clone['bot_id']}"
@@ -529,22 +525,18 @@ async def show_clone_menu(client, message, user_id):
                     )
                 ])
 
-        # Check if user is VIP (ultra) or if no clones exist
         is_vip = await db.is_premium(user_id, required_plan="vip")
         if is_vip or not clones:
             buttons.append([InlineKeyboardButton("➕ Add Clone", callback_data="add_clone")])
 
-        # Always add Back button
         buttons.append([InlineKeyboardButton("⬅️ Back", callback_data="start")])
 
-        # Update menu
         await message.edit_text(
             script.MANAGEC_TXT,
             reply_markup=InlineKeyboardMarkup(buttons)
         )
 
     except Exception as e:
-        # Send error to log channel and print
         await client.send_message(
             LOG_CHANNEL,
             f"⚠️ Show Clone Menu Error:\n\n<code>{e}</code>\n\nKindly check this message for assistance."
@@ -2894,7 +2886,8 @@ async def message_capture(client: Client, message: Message):
                 except:
                     pass
 
-                if await db.is_clone_exist(user_id):
+                is_vip = await db.is_premium(user_id, required_plan="vip")
+                if not is_vip and await db.is_clone_exist(user_id):
                     await msg.edit_text("You have already cloned a **bot**. Delete it first.")
                     await asyncio.sleep(2)
                     await show_clone_menu(client, msg, user_id)
