@@ -1049,45 +1049,6 @@ async def shorten_handler(client: Client, message: Message):
             except:
                 pass
             state.pop("help_msg_id", None)
-
-        if state["step"] == 1:
-            base_site = message.text.strip()
-            new_text = base_site.removeprefix("https://").removeprefix("http://")
-            if not domain(new_text):
-                return await message.reply("❌ Invalid domain. Send a valid base site:")
-            await update_user_info(user_id, {"base_site": new_text})
-            state["step"] = 2
-            await message.reply("✅ Base site set. Now send your **Shortener API key**:")
-            return
-
-        if state["step"] == 2:
-            api = message.text.strip()
-            await update_user_info(user_id, {"shortener_api": api})
-            state["step"] = 3
-            await message.reply("✅ API set. Now send the **link to shorten**:")
-            return
-
-        if state["step"] == 3:
-            long_link = message.text.strip()
-            user = await clonedb.get_user(user_id)
-            base_site = user.get("base_site")
-            api_key = user.get("shortener_api")
-            if not base_site or not api_key:
-                SHORTEN_STATE[user_id] = {"step": 1}
-                return await message.reply("❌ Base site or API missing. Let's start over. Send your base site:")
-
-            short_link = f"{base_site}/short?api={api_key}&url={long_link}"
-
-            reply_markup = InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🔁 Share URL", url=f'https://t.me/share/url?url={short_link}')]]
-            )
-
-            await message.reply(
-                f"🔗 Shortened link:\n{short_link}",
-                reply_markup=reply_markup
-            )
-
-            SHORTEN_STATE.pop(user_id, None)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
@@ -1618,116 +1579,166 @@ def clean_text(text: str) -> str:
         )
     return cleaned
 
-@Client.on_message(filters.group | filters.channel)
+@Client.on_message(filters.all)
 async def message_capture(client: Client, message: Message):
     try:
-        if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
-            return
+        chat = message.chat
+        user_id = message.from_user.id if message.from_user else None
 
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
+        if chat.type == enums.ChatType.PRIVATE and user_id:
+            if user_id not in SHORTEN_STATE:
                 return
 
-        me = CLONE_ME.get(client)
-        if not me:
-            print("❌ Failed to get bot info (me is None)")
-            return
+            state = SHORTEN_STATE[user_id]
 
-        clone = await db.get_bot(me.id)
-        if not clone:
-            return
-
-        owner_id = clone.get("user_id")
-        moderators = clone.get("moderators", [])
-        moderators = [int(m) for m in moderators]
-        word_filter = clone.get("word_filter", False)
-        random_caption = clone.get("random_caption", False)
-        header = clone.get("header", None)
-        footer = clone.get("footer", None)
-
-        selected_caption = random.choice(script.CAPTION_LIST)
-
-        text = message.text or message.caption or ""
-        original_text = text
-
-        if text:
-            if word_filter:
-                text = clean_text(original_text)
-            else:
-                text = text
-
-        if text != original_text:
-            await message.edit(text)
-            notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
-
-            for mod_id in moderators:
-                await client.send_message(chat_id=mod_id, text=notify_msg)
-            if owner_id:
-                await client.send_message(chat_id=owner_id, text=notify_msg)
-
-        new_text = ""
-
-        if header:
-            new_text += f"<blockquote>{header}</blockquote>\n\n"
-
-        if random_caption:
-            new_text += f"{selected_caption}\n\n<blockquote>{text}</blockquote>"
-        else:
-            new_text += f"{text}"
-
-        if footer:
-            new_text += f"\n\n<blockquote>{footer}</blockquote>"
-
-        if me.username and me.username in text:
-            await message.delete()
-
-            file_id = None
-            if message.photo:
-                file_id = message.photo.file_id
-            elif message.video:
-                file_id = message.video.file_id
-            elif message.document:
-                file_id = message.document.file_id
-
-            if file_id:
-                await client.send_cached_media(chat_id=message.chat.id, file_id=file_id, caption=new_text, parse_mode=enums.ParseMode.HTML)
-            else:
-                await client.send_message(chat_id=message.chat.id, text=new_text, parse_mode=enums.ParseMode.HTML)
-
-        media_file_id = None
-        media_type = None
-        if message.chat.id == -1003015483271:
-            if not await db.is_premium(owner_id):
+            if state["step"] == 1:
+                base_site = message.text.strip()
+                new_text = base_site.removeprefix("https://").removeprefix("http://")
+                if not domain(new_text):
+                    return await message.reply("❌ Invalid domain. Send a valid base site:")
+                await update_user_info(user_id, {"base_site": new_text})
+                state["step"] = 2
+                await message.reply("✅ Base site set. Now send your **Shortener API key**:")
                 return
 
-            if message.video:
-                media_file_id = message.video.file_id
-                media_type = "video"
-            elif message.document:
-                media_file_id = message.document.file_id
-                media_type = "document"
-            elif message.animation:
-                media_file_id = message.animation.file_id
-                media_type = "animation"
+            if state["step"] == 2:
+                api = message.text.strip()
+                await update_user_info(user_id, {"shortener_api": api})
+                state["step"] = 3
+                await message.reply("✅ API set. Now send the **link to shorten**:")
+                return
 
-            if media_file_id:
-                if await db.is_media_exist(me.id, media_file_id):
-                    print(f"⚠️ Duplicate media skip kiya: {media_type} ({media_file_id}) for bot {me.id}")
+            if state["step"] == 3:
+                long_link = message.text.strip()
+                user = await clonedb.get_user(user_id)
+                base_site = user.get("base_site")
+                api_key = user.get("shortener_api")
+
+                if not base_site or not api_key:
+                    SHORTEN_STATE[user_id] = {"step": 1}
+                    return await message.reply("❌ Base site or API missing. Let's start over.")
+
+                short_link = f"{base_site}/short?api={api_key}&url={long_link}"
+
+                reply_markup = InlineKeyboardMarkup(
+                    [[InlineKeyboardButton("🔁 Share URL", url=f'https://t.me/share/url?url={short_link}')]]
+                )
+
+                await message.reply(
+                    f"🔗 Shortened link:\n{short_link}",
+                    reply_markup=reply_markup
+                )
+                
+                SHORTEN_STATE.pop(user_id, None)
+        
+        elif chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP, enums.ChatType.CHANNEL]:
+            if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
+                return
+
+            if client not in CLONE_ME or CLONE_ME[client] is None:
+                try:
+                    CLONE_ME[client] = await client.get_me()
+                except Exception as e:
+                    print(f"⚠️ get_me() failed: {e}")
                     return
 
-                await db.add_media(
-                    bot_id=me.id,
-                    msg_id=message.id,
-                    file_id=media_file_id,
-                    caption=message.caption or "",
-                    media_type=media_type,
-                    date=int(message.date.timestamp())
-                )
-                print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
-                await asyncio.sleep(0.3)
+            me = CLONE_ME.get(client)
+            if not me:
+                print("❌ Failed to get bot info (me is None)")
+                return
+
+            clone = await db.get_bot(me.id)
+            if not clone:
+                return
+
+            owner_id = clone.get("user_id")
+            moderators = clone.get("moderators", [])
+            moderators = [int(m) for m in moderators]
+            word_filter = clone.get("word_filter", False)
+            random_caption = clone.get("random_caption", False)
+            header = clone.get("header", None)
+            footer = clone.get("footer", None)
+
+            selected_caption = random.choice(script.CAPTION_LIST)
+
+            text = message.text or message.caption or ""
+            original_text = text
+
+            if text:
+                if word_filter:
+                    text = clean_text(original_text)
+                else:
+                    text = text
+
+            if text != original_text:
+                await message.edit(text)
+                notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
+
+                for mod_id in moderators:
+                    await client.send_message(chat_id=mod_id, text=notify_msg)
+                if owner_id:
+                    await client.send_message(chat_id=owner_id, text=notify_msg)
+
+            new_text = ""
+
+            if header:
+                new_text += f"<blockquote>{header}</blockquote>\n\n"
+
+            if random_caption:
+                new_text += f"{selected_caption}\n\n<blockquote>{text}</blockquote>"
+            else:
+                new_text += f"{text}"
+
+            if footer:
+                new_text += f"\n\n<blockquote>{footer}</blockquote>"
+
+            if me.username and me.username in text:
+                await message.delete()
+
+                file_id = None
+                if message.photo:
+                    file_id = message.photo.file_id
+                elif message.video:
+                    file_id = message.video.file_id
+                elif message.document:
+                    file_id = message.document.file_id
+
+                if file_id:
+                    await client.send_cached_media(chat_id=message.chat.id, file_id=file_id, caption=new_text, parse_mode=enums.ParseMode.HTML)
+                else:
+                    await client.send_message(chat_id=message.chat.id, text=new_text, parse_mode=enums.ParseMode.HTML)
+
+            media_file_id = None
+            media_type = None
+            if message.chat.id == -1003015483271:
+                if not await db.is_premium(owner_id):
+                    return
+
+                if message.video:
+                    media_file_id = message.video.file_id
+                    media_type = "video"
+                elif message.document:
+                    media_file_id = message.document.file_id
+                    media_type = "document"
+                elif message.animation:
+                    media_file_id = message.animation.file_id
+                    media_type = "animation"
+
+                if media_file_id:
+                    if await db.is_media_exist(me.id, media_file_id):
+                        print(f"⚠️ Duplicate media skip kiya: {media_type} ({media_file_id}) for bot {me.id}")
+                        return
+
+                    await db.add_media(
+                        bot_id=me.id,
+                        msg_id=message.id,
+                        file_id=media_file_id,
+                        caption=message.caption or "",
+                        media_type=media_type,
+                        date=int(message.date.timestamp())
+                    )
+                    print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
+                    await asyncio.sleep(0.3)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
