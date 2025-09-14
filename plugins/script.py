@@ -28,11 +28,11 @@ I am a permenant file store bot. you can store files from your public channel wi
 
 📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>
 
-🧑🏻‍💻 Developer: <a href=https://t.me/PookieManagerBot>Pookie</a>
+🧑🏻‍💻 Developer: <a href=https://t.me/+YczdaoCKP-AxMWFl>Pookie</a>
 
-👥 Support Group: <a href=https://t.me/PookieManagerBot>Support</a>
+👥 Support Group: <a href=https://t.me/+YczdaoCKP-AxMWFl>Support</a>
 
-📢 Update Channel: <a href=https://t.me/PookieManagerBot>Update</a>"""
+📢 Update Channel: <a href=https://t.me/+YczdaoCKP-AxMWFl>Update</a>"""
 
     CABOUT_TXT = """<u>**✨ ABOUT ME**</u>
 
