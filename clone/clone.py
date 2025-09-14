@@ -978,7 +978,7 @@ async def batch(client, message):
         )
         print(f"⚠️ Clone Batch Error: {e}")
 
-@Client.on_message(filters.command("shorten") & filters.private)
+@Client.on_message(filters.command("shortener") & filters.private)
 async def shorten_handler(client: Client, message: Message):
     try:
         if client not in CLONE_ME or CLONE_ME[client] is None:
