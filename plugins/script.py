@@ -28,9 +28,9 @@ I am a permenant file store bot. you can store files from your public channel wi
 
 📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>
 
-🧑🏻‍💻 Developer: <a href=https://t.me/+YczdaoCKP-AxMWFl>Pookie</a>
+🧑🏻‍💻 Developer: <a href=https://t.me/DeadxNone>Developer</a>
 
-👥 Support Group: <a href=https://t.me/+YczdaoCKP-AxMWFl>Support</a>
+👥 Support Group: <a href=https://t.me/+8E9nKxs8Y-Y2OGRl>Support</a>
 
 📢 Update Channel: <a href=https://t.me/+YczdaoCKP-AxMWFl>Update</a>"""
 
