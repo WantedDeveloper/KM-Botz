@@ -1017,14 +1017,14 @@ async def shorten_handler(client: Client, message: Message):
         user = await clonedb.get_user(user_id)
 
         help_text = (
-            "/shorten - Start shortening links\n"
-            "/shorten None - Reset Base Site and Shortener API\n\n"
+            "/shortener - Start shortening links\n"
+            "/shortener None - Reset Base Site and Shortener API\n\n"
             "Flow:\n"
-            "1️⃣ Send /shorten to start\n"
+            "1️⃣ Send /shortener to start\n"
             "2️⃣ Set your Base Site (e.g., shortnerdomain.com)\n"
             "3️⃣ Set your Shortener API\n"
-            "4️⃣ Send the link to shorten\n\n"
-            "Example to reset: `/shorten None`"
+            "4️⃣ Send the link to shortener\n\n"
+            "Example to reset: `/shortener None`"
         )
 
         if len(cmd) == 1:
