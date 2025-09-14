@@ -1644,6 +1644,11 @@ async def message_capture(client: Client, message: Message):
             if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
                 return
 
+            try:
+                await message.react(emoji=random.choice(script.REACTIONS), big=True)
+            except:
+                pass
+
             if client not in CLONE_ME or CLONE_ME[client] is None:
                 try:
                     CLONE_ME[client] = await client.get_me()
