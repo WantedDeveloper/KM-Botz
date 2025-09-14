@@ -1497,6 +1497,9 @@ def clean_text(text: str) -> str:
 @Client.on_message(filters.group | filters.channel)
 async def message_capture(client: Client, message: Message):
     try:
+        if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
+            return
+
         if client not in CLONE_ME or CLONE_ME[client] is None:
             try:
                 CLONE_ME[client] = await client.get_me()
