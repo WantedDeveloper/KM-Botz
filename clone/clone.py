@@ -1626,7 +1626,7 @@ async def message_capture(client: Client, message: Message):
                     SHORTEN_STATE[user_id] = {"step": 1}
                     return await message.reply("❌ Base site or API missing. Let's start over.")
 
-                short_link = await get_short_link(user, share_link)
+                short_link = await get_short_link(user, long_link)
 
                 reply_markup = InlineKeyboardMarkup(
                     [[InlineKeyboardButton("🔁 Share URL", url=f'https://t.me/share/url?url={short_link}')]]
