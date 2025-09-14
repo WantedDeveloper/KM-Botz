@@ -2813,7 +2813,7 @@ async def promote(bot_username: str):
             )
         )
 
-        await client.send_message(
+        await assistant.send_message(
             LOG_CHANNEL,
             f"✅ Clone bot @{bot_username} promoted as admin"
         )
