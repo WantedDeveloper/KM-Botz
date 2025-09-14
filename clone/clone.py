@@ -978,6 +978,123 @@ async def batch(client, message):
         )
         print(f"⚠️ Clone Batch Error: {e}")
 
+@Client.on_message(filters.command("shorten") & filters.private)
+async def shorten_handler(client: Client, message: Message):
+    try:
+        if client not in CLONE_ME or CLONE_ME[client] is None:
+            try:
+                CLONE_ME[client] = await client.get_me()
+            except Exception as e:
+                print(f"⚠️ get_me() failed: {e}")
+                return
+
+        me = CLONE_ME.get(client)
+        if not me:
+            print("❌ Failed to get bot info (me is None)")
+            return
+
+        clone = await db.get_bot(me.id)
+        if not clone:
+            return
+
+        owner_id = clone.get("user_id")
+        moderators = clone.get("moderators", [])
+
+        if message.from_user.id != owner_id and message.from_user.id not in moderators:
+            await message.reply("❌ You are not authorized to use this bot.")
+            return
+
+        user_id = message.from_user.id
+        cmd = message.command
+        user = await db.get_user(user_id)
+
+        help_text = (
+            "/shorten - Start shortening links\n"
+            "/shorten None - Reset Base Site and Shortener API\n\n"
+            "Flow:\n"
+            "1️⃣ Send /shorten to start\n"
+            "2️⃣ Set your Base Site (e.g., shortnerdomain.com)\n"
+            "3️⃣ Set your Shortener API\n"
+            "4️⃣ Send the link to shorten\n\n"
+            "Example to reset: `/shorten None`"
+        )
+
+        if len(cmd) == 1:
+            help_msg = await message.reply(help_text)
+            SHORTEN_STATE[user_id] = {"step": 1, "help_msg_id": help_msg.id}
+
+            if user.get("base_site") and user.get("shortener_api"):
+                SHORTEN_STATE[user_id]["step"] = 3
+                await message.reply("🔗 Base site and API already set. Send the link you want to shorten:")
+            else:
+                await message.reply("Please send your **base site** (e.g., shortnerdomain.com):")
+            return
+
+        if len(cmd) == 2 and cmd[1].lower() == "none":
+            await update_user_info(user_id, {"base_site": None, "shortener_api": None})
+            SHORTEN_STATE[user_id] = {"step": 1}
+            return await message.reply(
+                "✅ Base site and API reset. Please send your **base site** (e.g., shortnerdomain.com)"
+            )
+
+        if user_id not in SHORTEN_STATE:
+            SHORTEN_STATE[user_id] = {"step": 1}
+
+        state = SHORTEN_STATE[user_id]
+
+        help_msg_id = state.get("help_msg_id")
+        if help_msg_id:
+            try:
+                await client.delete_messages(chat_id=message.chat.id, message_ids=help_msg_id)
+            except:
+                pass
+            state.pop("help_msg_id", None)
+
+        if state["step"] == 1:
+            base_site = message.text.strip()
+            new_text = base_site.removeprefix("https://").removeprefix("http://")
+            if not domain(new_text):
+                return await message.reply("❌ Invalid domain. Send a valid base site:")
+            await update_user_info(user_id, {"base_site": new_text})
+            state["step"] = 2
+            await message.reply("✅ Base site set. Now send your **Shortener API key**:")
+            return
+
+        if state["step"] == 2:
+            api = message.text.strip()
+            await update_user_info(user_id, {"shortener_api": api})
+            state["step"] = 3
+            await message.reply("✅ API set. Now send the **link to shorten**:")
+            return
+
+        if state["step"] == 3:
+            long_link = message.text.strip()
+            user = await db.get_user(user_id)
+            base_site = user.get("base_site")
+            api_key = user.get("shortener_api")
+            if not base_site or not api_key:
+                SHORTEN_STATE[user_id] = {"step": 1}
+                return await message.reply("❌ Base site or API missing. Let's start over. Send your base site:")
+
+            short_link = f"{base_site}/short?api={api_key}&url={long_link}"
+
+            reply_markup = InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🔁 Share URL", url=f'https://t.me/share/url?url={short_link}')]]
+            )
+
+            await message.reply(
+                f"🔗 Shortened link:\n{short_link}",
+                reply_markup=reply_markup
+            )
+
+            SHORTEN_STATE.pop(user_id, None)
+    except Exception as e:
+        await client.send_message(
+            LOG_CHANNEL,
+            f"⚠️ Clone Shorten Error:\n\n<code>{e}</code>\n\nKindly check this message for assistance."
+        )
+        print(f"⚠️ Clone Shorten Error: {e}")
+
 async def broadcast_messages(bot_id, user_id, message):
     try:
         await message.copy(chat_id=user_id)
