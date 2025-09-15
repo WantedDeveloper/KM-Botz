@@ -687,7 +687,7 @@ async def show_fsub_menu(client, message, bot_id):
             target = btn.get("limit", 0)
             joined = btn.get("joined", 0)
 
-            if target != 0 and joined >= target:
+            if target > 0 and joined >= target:
                 changed = True
                 continue  
 
