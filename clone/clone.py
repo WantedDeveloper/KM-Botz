@@ -209,8 +209,8 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
+                member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                 try:
-                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                     if mode == "normal":
                         if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
