@@ -218,6 +218,8 @@ async def start(client, message):
 
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+
+                    # --- Normal mode ---
                     if mode == "normal":
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             if message.from_user.id not in users_counted:
@@ -225,31 +227,30 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                            show_button = False
+                            show_button = False  # Hide button if already member
 
+                    # --- Request mode ---
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+                        if member.status in [
+                            enums.ChatMemberStatus.MEMBER,
+                            enums.ChatMemberStatus.ADMINISTRATOR,
+                            enums.ChatMemberStatus.OWNER,
+                            enums.ChatMemberStatus.RESTRICTED
+                        ]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] += 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                            show_button = False
-                        elif member.status == enums.ChatMemberStatus.RESTRICTED:
-                            if message.from_user.id not in users_counted:
-                                item["joined"] += 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            show_button = False
+                            show_button = False  # Hide button if already requested or member
 
                 except UserNotParticipant:
-                    if mode == "request":
-                        show_button = True
-
+                    # User has not joined yet, show join button
+                    show_button = True
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
+                # Only append if limit not reached
                 if target == 0 or item["joined"] < target:
                     new_fsub_data.append(item)
                     if show_button:
