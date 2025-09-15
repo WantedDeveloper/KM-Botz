@@ -236,7 +236,7 @@ async def start(client, message):
 
                     elif mode == "request":
                         # Treat MEMBER, RESTRICTED, ADMIN, OWNER as joined → hide fsub
-                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                        if member.status not in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                         else:
                             if message.from_user.id not in users_counted:
