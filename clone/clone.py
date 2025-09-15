@@ -220,18 +220,25 @@ async def start(client, message):
                             if target == 0 or joined < target:
                                 item["joined"] = joined + 1
                                 updated = True
+                                new_fsub_data.append(item)
+                            else:
+                                pass
                     elif mode == "request":
                         if target == 0 or joined < target:
                             item["joined"] = joined + 1
                             updated = True
+                            if target == 0 or item["joined"] < target:
+                                new_fsub_data.append(item)
+                        else:
+                            pass
                 except UserNotParticipant:
-                    pass
+                    new_fsub_data.append(item)
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
+                    new_fsub_data.append(item)
 
-                new_fsub_data.append(item)
-
-                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                if item in new_fsub_data:
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
