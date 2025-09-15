@@ -217,6 +217,7 @@ async def start(client, message):
                 incremented = False
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+
                     if mode == "normal":
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             if message.from_user.id not in users_counted:
@@ -227,20 +228,21 @@ async def start(client, message):
                                 incremented = True
 
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
+                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = joined + 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                                incremented = True
+                            continue
+
                         elif member.status == enums.ChatMemberStatus.RESTRICTED:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = joined + 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                                incremented = True
+                            continue
 
                 except UserNotParticipant:
                     if mode == "request" and message.from_user.id not in users_counted:
@@ -249,6 +251,7 @@ async def start(client, message):
                         item["users_counted"] = users_counted
                         updated = True
                         incremented = True
+
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
