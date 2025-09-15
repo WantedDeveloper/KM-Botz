@@ -186,7 +186,7 @@ async def start(client, message):
             await db.increment_users_count(me.id)
 
         # --- Force subscribe check ---
-        if not await is_subscribed(clone_client, message.from_user.id, me.id):
+        if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
             new_fsub_data = []
             buttons = []
