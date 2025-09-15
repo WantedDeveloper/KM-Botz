@@ -39,23 +39,21 @@ async def is_subscribed(client, user_id: int, bot_id: int):
 
         try:
             member = await client.get_chat_member(channel_id, user_id)
-
             if mode == "normal":
                 if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                     continue
                 else:
                     return False
-
             elif mode == "request":
                 if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                     continue
                 elif member.status == enums.ChatMemberStatus.RESTRICTED:
-                    continue  # ✅ request bhej diya
+                    continue
                 else:
                     return False
 
         except UserNotParticipant:
-            return False  # ✅ agar channel me nahi mila to fsub fail
+            return False
         except Exception as e:
             print(f"⚠️ is_subscribed error {channel_id}: {e}")
             return False
@@ -193,6 +191,105 @@ async def start(client, message):
             await clonedb.add_user(me.id, message.from_user.id)
             await db.increment_users_count(me.id)
 
+        if not await is_subscribed(client, message.from_user.id, me.id):
+            fsub_data = clone.get("force_subscribe", [])
+            new_fsub_data = []
+            buttons = []
+            updated = False
+            fs_pending = False
+
+            clone_client = get_client(me.id)
+            if not clone_client:
+                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
+                return
+
+            for item in fsub_data:
+                ch_id = int(item["channel"])
+                mode = item.get("mode", "normal")
+                users_counted = item.get("users_counted", [])
+
+                if not item.get("link"):
+                    try:
+                        if mode == "request":
+                            # CREATE JOIN REQUEST LINK
+                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
+                            item["link"] = invite.invite_link
+                            # REQUEST MODE → consider subscribed immediately
+                            item["joined"] = item.get("joined", 0) + 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                            continue  # skip FSUB buttons, show start menu
+                        else:
+                            invite = await clone_client.create_chat_invite_link(ch_id)
+                            item["link"] = invite.invite_link
+                            updated = True
+                    except Exception as e:
+                        print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
+
+                # NORMAL mode → membership check
+                if mode == "normal":
+                    try:
+                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                            fs_pending = True
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            new_fsub_data.append(item)
+                        else:
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = item.get("joined", 0) + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+                    except UserNotParticipant:
+                        fs_pending = True
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        new_fsub_data.append(item)
+                    except Exception as e:
+                        print(f"⚠️ Error checking member for {ch_id}: {e}")
+
+            # Update DB
+            if updated:
+                await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
+
+            # Show FSUB buttons if normal mode pending
+            if fs_pending and buttons:
+                if len(message.command) > 1:
+                    start_arg = message.command[1]
+                    try:
+                        kk, file_id = start_arg.split("_", 1)
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                    except:
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
+
+                await client.send_message(
+                    message.from_user.id,
+                    "🚨 You must join the channel(s) first to use this bot.",
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=enums.ParseMode.MARKDOWN
+                )
+                return  # stop further start logic if FSUB pending
+
+        # --- Normal start menu ---
+        buttons = [
+            [InlineKeyboardButton('💁‍♀️ Help', callback_data='help'),
+             InlineKeyboardButton('😊 About', callback_data='about')],
+            [InlineKeyboardButton('🤖 Create Your Own Clone', url=f'https://t.me/{BOT_USERNAME}?start')],
+            [InlineKeyboardButton('🔒 Close', callback_data='close')]
+        ]
+
+        start_text = clone.get("wlc") or script.START_TXT
+        start_pic = clone.get("pics") or None
+
+        if start_pic:
+            await message.reply_photo(
+                photo=start_pic,
+                caption=start_text.format(user=message.from_user.mention, bot=client.me.mention),
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        else:
+            await message.re
+            
         if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
             new_fsub_data = []
