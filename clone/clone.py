@@ -209,8 +209,8 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
-                member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                 try:
+                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                     if mode == "normal":
                         if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
@@ -221,19 +221,6 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
-                            if message.from_user.id not in users_counted:
-                                item["joined"] = item.get("joined", 0) + 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
-                        else:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                except UserNotParticipant:
-                    if mode == "normal":
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                    elif mode == "request":
                         if member.status not in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
@@ -243,6 +230,8 @@ async def start(client, message):
                             continue
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                except UserNotParticipant:
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
