@@ -228,15 +228,7 @@ async def start(client, message):
                             updated = True
                         continue
                 except UserNotParticipant:
-                    if mode == "normal":
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                    elif mode == "request":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] = item.get("joined", 0) + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
