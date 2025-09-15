@@ -39,15 +39,17 @@ async def is_subscribed(client, user_id: int, bot_id: int):
 
         try:
             member = await client.get_chat_member(channel_id, user_id)
+
             if mode == "normal":
                 if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                     continue
                 else:
                     return False
+
             elif mode == "request":
-                if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-                    continue
-                elif member.status == enums.ChatMemberStatus.RESTRICTED:
+                # Agar user MEMBER, ADMIN, OWNER, ya RESTRICTED → consider as subscribed
+                if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR,
+                                     enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                     continue
                 else:
                     return False
@@ -196,7 +198,6 @@ async def start(client, message):
             new_fsub_data = []
             buttons = []
             updated = False
-            fs_pending = False
 
             clone_client = get_client(me.id)
             if not clone_client:
@@ -208,52 +209,55 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
+                # Create invite link if missing
                 if not item.get("link"):
                     try:
                         if mode == "request":
-                            # CREATE JOIN REQUEST LINK
                             invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
-                            item["link"] = invite.invite_link
-                            # REQUEST MODE → consider subscribed immediately
-                            item["joined"] = item.get("joined", 0) + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                            continue  # skip FSUB buttons, show start menu
                         else:
                             invite = await clone_client.create_chat_invite_link(ch_id)
-                            item["link"] = invite.invite_link
-                            updated = True
+                        item["link"] = invite.invite_link
+                        updated = True
                     except Exception as e:
                         print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
 
-                # NORMAL mode → membership check
-                if mode == "normal":
-                    try:
-                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+                try:
+                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+
+                    if mode == "normal":
                         if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                            fs_pending = True
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                            new_fsub_data.append(item)
                         else:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                    except UserNotParticipant:
-                        fs_pending = True
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                        new_fsub_data.append(item)
-                    except Exception as e:
-                        print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-            # Update DB
+                    elif mode == "request":
+                        # Treat MEMBER, RESTRICTED, ADMIN, OWNER as joined → hide fsub
+                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        else:
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = item.get("joined", 0) + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+
+                except UserNotParticipant:
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                except Exception as e:
+                    print(f"⚠️ Error checking member for {ch_id}: {e}")
+
+                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
+                    new_fsub_data.append(item)
+
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            # Show FSUB buttons if normal mode pending
-            if fs_pending and buttons:
+            # Agar buttons hai → show fsub, warna start menu
+            if buttons:
                 if len(message.command) > 1:
                     start_arg = message.command[1]
                     try:
@@ -268,7 +272,7 @@ async def start(client, message):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=enums.ParseMode.MARKDOWN
                 )
-                return  # stop further start logic if FSUB pending
+                return
 
         if len(message.command) == 1:
             buttons = [[
