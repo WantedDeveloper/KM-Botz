@@ -207,7 +207,6 @@ async def start(client, message):
             await clonedb.add_user(me.id, message.from_user.id)
             await db.increment_users_count(me.id)
 
-        # --- Force subscribe check ---
         if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
             new_fsub_data = []
@@ -225,7 +224,6 @@ async def start(client, message):
                 joined = item.get("joined", 0)
                 users_counted = item.get("users_counted", [])
 
-                # ---------------- Create Invite Link ----------------
                 if not item.get("link"):
                     try:
                         if mode == "request":
@@ -240,7 +238,6 @@ async def start(client, message):
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
-                    # ---------------- Normal Mode ----------------
                     if mode == "normal":
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             if message.from_user.id not in users_counted:
@@ -248,47 +245,33 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                            # Already member → no button
                             continue
-                        # Not joined → show join button
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-
-                    # ---------------- Request Mode ----------------
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+                        if member.status in [
+                            enums.ChatMemberStatus.MEMBER,
+                            enums.ChatMemberStatus.ADMINISTRATOR,
+                            enums.ChatMemberStatus.OWNER,
+                            enums.ChatMemberStatus.RESTRICTED
+                        ]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] += 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
                             continue
-                        elif member.status == enums.ChatMemberStatus.RESTRICTED:
-                            # Sent join request
-                            if message.from_user.id not in users_counted:
-                                item["joined"] += 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
-                        # Not requested yet → show join button
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-
                 except UserNotParticipant:
-                    # Not participant → show join button
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-                # ---------------- Append to new fsub data ----------------
                 if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
                     new_fsub_data.append(item)
 
-            # ---------------- Update DB ----------------
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            # ---------------- Try Again Button ----------------
             if len(message.command) > 1:
                 start_arg = message.command[1]
                 try:
@@ -297,7 +280,6 @@ async def start(client, message):
                 except:
                     buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-            # ---------------- Send Force-Subscribe Message ----------------
             await client.send_message(
                 message.from_user.id,
                 "🚨 You must join the channel(s) first to use this bot.",
