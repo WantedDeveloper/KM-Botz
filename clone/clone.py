@@ -234,7 +234,7 @@ async def start(client, message):
                     if mode == "normal":
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
+                        if member.status not in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
