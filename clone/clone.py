@@ -47,9 +47,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
             elif mode == "request":
-                if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                    return False
-                elif member.status == enums.ChatMemberStatus.RESTRICTED:
+                if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                     continue
                 else:
                     return False
