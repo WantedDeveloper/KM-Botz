@@ -28,7 +28,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
     """
     Check if the user has satisfied all force-subscribe requirements.
     - Normal mode: user must be a member.
-    - Request mode: user must have sent a join request or be a member.
+    - Request mode: user must have sent a join request (approve hone ka wait nahi).
     Returns True if all fsub conditions are met.
     """
     clone = await db.get_bot(bot_id)
@@ -52,19 +52,15 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
             elif mode == "request":
-                # Request: user must be member/admin/owner or already requested
-                if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                    return False
-                elif member.status == enums.ChatMemberStatus.RESTRICTED:
-                    # User sent join request → OK
-                    continue
+                # ✅ Request bhejte hi subscribed treat karo
+                return True
 
         except UserNotParticipant:
-            if mode == "request":
-                # Not requested yet → not subscribed
+            if mode == "normal":
                 return False
-            elif mode == "normal":
-                return False
+            elif mode == "request":
+                # ✅ Agar abhi bhi participant nahi mila, fir bhi subscribed treat karo
+                return True
 
         except Exception as e:
             await client.send_message(
@@ -247,22 +243,28 @@ async def start(client, message):
                                 updated = True
                             continue
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+
                     elif mode == "request":
-                        if member.status in [
-                            enums.ChatMemberStatus.MEMBER,
-                            enums.ChatMemberStatus.ADMINISTRATOR,
-                            enums.ChatMemberStatus.OWNER,
-                            enums.ChatMemberStatus.RESTRICTED
-                        ]:
-                            if message.from_user.id not in users_counted:
-                                item["joined"] += 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        # ✅ Request bhejte hi subscribed treat karna
+                        if message.from_user.id not in users_counted:
+                            item["joined"] += 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        continue
+
                 except UserNotParticipant:
-                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    if mode == "normal":
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    elif mode == "request":
+                        # ✅ Agar request bhej di ho → subscribed maan lo
+                        if message.from_user.id not in users_counted:
+                            item["joined"] += 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        continue
+
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
@@ -272,21 +274,22 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            if len(message.command) > 1:
-                start_arg = message.command[1]
-                try:
-                    kk, file_id = start_arg.split("_", 1)
-                    buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-                except:
-                    buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
+            if buttons:
+                if len(message.command) > 1:
+                    start_arg = message.command[1]
+                    try:
+                        kk, file_id = start_arg.split("_", 1)
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                    except:
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-            await client.send_message(
-                message.from_user.id,
-                "🚨 You must join the channel(s) first to use this bot.",
-                reply_markup=InlineKeyboardMarkup(buttons),
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-            return
+                await client.send_message(
+                    message.from_user.id,
+                    "🚨 You must join the channel(s) first to use this bot.",
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=enums.ParseMode.MARKDOWN
+                )
+                return
 
         if len(message.command) == 1:
             buttons = [[
