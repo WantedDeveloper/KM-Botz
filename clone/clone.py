@@ -185,77 +185,71 @@ async def start(client, message):
             await clonedb.add_user(me.id, message.from_user.id)
             await db.increment_users_count(me.id)
 
-        if await is_subscribed(client, message.from_user.id, me.id):
-            return  # Already subscribed
+        if not await is_subscribed(client, message.from_user.id, me.id):
+            fsub_data = clone.get("force_subscribe", [])
+            buttons = []
+            updated = False
+            new_fsub_data = []
 
-        fsub_data = clone.get("force_subscribe", [])
-        buttons = []
-        updated = False
-        new_fsub_data = []
+            clone_client = get_client(me.id)
+            if not clone_client:
+                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
+                return
 
-        clone_client = get_client(me.id)
-        if not clone_client:
-            await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
-            return
+            for item in fsub_data:
+                ch_id = item["channel"]
+                target = item.get("limit", 0)
+                joined = item.get("joined", 0)
+                mode = item.get("mode", "normal")
 
-        for item in fsub_data:
-            ch_id = item["channel"]
-            target = item.get("limit", 0)
-            joined = item.get("joined", 0)
-            mode = item.get("mode", "normal")
+                if not item.get("link"):
+                    try:
+                        if mode == "request":
+                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
+                        else:
+                            invite = await clone_client.create_chat_invite_link(ch_id)
+                        item["link"] = invite.invite_link
+                        updated = True
+                    except Exception as e:
+                        print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
 
-            # Ensure link exists
-            if not item.get("link"):
                 try:
-                    if mode == "request":
-                        invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
-                    else:
-                        invite = await clone_client.create_chat_invite_link(ch_id)
-                    item["link"] = invite.invite_link
-                    updated = True
-                except Exception as e:
-                    print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
-
-            # Update joined count for normal mode
-            try:
-                if mode == "normal":
-                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
-                    if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                    if mode == "normal":
+                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+                        if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                            if target == 0 or joined < target:
+                                item["joined"] = joined + 1
+                                updated = True
+                    elif mode == "request":
                         if target == 0 or joined < target:
                             item["joined"] = joined + 1
                             updated = True
-                elif mode == "request":
-                    if target == 0 or joined < target:
-                        item["joined"] = joined + 1
-                        updated = True
-            except UserNotParticipant:
-                pass
-            except Exception as e:
-                print(f"⚠️ Error checking member for {ch_id}: {e}")
+                except UserNotParticipant:
+                    pass
+                except Exception as e:
+                    print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-            new_fsub_data.append(item)  # Always keep the channel
+                new_fsub_data.append(item)
 
-            # Add join buttons
-            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
-        if updated:
-            await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
+            if updated:
+                await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-        # Add try again button if user came with start parameter
-        if len(message.command) > 1:
-            start_arg = message.command[1]
-            try:
-                kk, file_id = start_arg.split("_", 1)
-                buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-            except:
-                buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
+            if len(message.command) > 1:
+                start_arg = message.command[1]
+                try:
+                    kk, file_id = start_arg.split("_", 1)
+                    buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                except:
+                    buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-        await client.send_message(
-            message.from_user.id,
-            "🚨 You must join the channel(s) first to use this bot.",
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
+            await client.send_message(
+                message.from_user.id,
+                "🚨 You must join the channel(s) first to use this bot.",
+                reply_markup=InlineKeyboardMarkup(buttons),
+                parse_mode=enums.ParseMode.MARKDOWN
+            )
 
         if len(message.command) == 1:
             buttons = [[
