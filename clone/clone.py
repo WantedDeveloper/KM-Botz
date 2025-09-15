@@ -26,10 +26,9 @@ START_TIME = time.time()
 
 async def is_subscribed(client, user_id: int, bot_id: int):
     """
-    Check if the user has satisfied all force-subscribe requirements.
+    Check if user satisfies all force-subscribe channels.
     - Normal mode: user must be a member.
-    - Request mode: user must have sent a join request (approve hone ka wait nahi).
-    Returns True if all fsub conditions are met.
+    - Request mode: user must be member or sent join request.
     """
     clone = await db.get_bot(bot_id)
     if not clone:
@@ -39,35 +38,42 @@ async def is_subscribed(client, user_id: int, bot_id: int):
     if not fsub_data:
         return True
 
+    clone_client = get_client(bot_id)
+    if not clone_client:
+        return False
+
     for item in fsub_data:
-        channel_id = int(item["channel"])
+        ch_id = int(item["channel"])
         mode = item.get("mode", "normal")
 
         try:
-            member = await client.get_chat_member(channel_id, user_id)
+            member = await clone_client.get_chat_member(ch_id, user_id)
 
             if mode == "normal":
-                # Normal: user must be member/admin/owner
-                if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                if member.status in [
+                    enums.ChatMemberStatus.MEMBER,
+                    enums.ChatMemberStatus.ADMINISTRATOR,
+                    enums.ChatMemberStatus.OWNER
+                ]:
+                    continue
+                else:
                     return False
 
             elif mode == "request":
-                # ✅ Request bhejte hi subscribed treat karo
-                return True
+                if member.status in [
+                    enums.ChatMemberStatus.MEMBER,
+                    enums.ChatMemberStatus.ADMINISTRATOR,
+                    enums.ChatMemberStatus.OWNER,
+                    enums.ChatMemberStatus.RESTRICTED  # ✅ request sent = ok
+                ]:
+                    continue
+                else:
+                    return False
 
         except UserNotParticipant:
-            if mode == "normal":
-                return False
-            elif mode == "request":
-                # ✅ Agar abhi bhi participant nahi mila, fir bhi subscribed treat karo
-                return True
-
+            return False
         except Exception as e:
-            await client.send_message(
-                LOG_CHANNEL,
-                f"⚠️ Clone is_subscribed Error:\n\n<code>{channel_id}: {e}</code>"
-            )
-            print(f"⚠️ Clone is_subscribed Error: {channel_id}: {e}")
+            print(f"⚠️ Error in is_subscribed: {e}")
             return False
 
     return True
@@ -205,21 +211,17 @@ async def start(client, message):
 
         if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
-            new_fsub_data = []
             buttons = []
-            updated = False
 
-            clone_client = get_client(me.id)
+            clone_client = get_client(bot_id)
             if not clone_client:
-                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
-                return
+                return False
 
             for item in fsub_data:
                 ch_id = int(item["channel"])
                 mode = item.get("mode", "normal")
-                joined = item.get("joined", 0)
-                users_counted = item.get("users_counted", [])
 
+                # Create invite link if missing
                 if not item.get("link"):
                     try:
                         if mode == "request":
@@ -227,69 +229,30 @@ async def start(client, message):
                         else:
                             invite = await clone_client.create_chat_invite_link(ch_id)
                         item["link"] = invite.invite_link
-                        updated = True
+                        await db.update_clone(me.id, {"force_subscribe": fsub_data})
                     except Exception as e:
                         print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
+                        continue
 
+                # Show join button
+                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+
+            # Add try again button
+            if len(message.command) > 1:
+                start_arg = message.command[1]
                 try:
-                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+                    kk, file_id = start_arg.split("_", 1)
+                    buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                except:
+                    buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-                    if mode == "normal":
-                        if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                            if message.from_user.id not in users_counted:
-                                item["joined"] += 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-
-                    elif mode == "request":
-                        # ✅ Request bhejte hi subscribed treat karna
-                        if message.from_user.id not in users_counted:
-                            item["joined"] += 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
-
-                except UserNotParticipant:
-                    if mode == "normal":
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                    elif mode == "request":
-                        # ✅ Agar request bhej di ho → subscribed maan lo
-                        if message.from_user.id not in users_counted:
-                            item["joined"] += 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
-
-                except Exception as e:
-                    print(f"⚠️ Error checking member for {ch_id}: {e}")
-
-                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
-                    new_fsub_data.append(item)
-
-            if updated:
-                await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
-
-            if buttons:
-                if len(message.command) > 1:
-                    start_arg = message.command[1]
-                    try:
-                        kk, file_id = start_arg.split("_", 1)
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-                    except:
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
-
-                await client.send_message(
-                    message.from_user.id,
-                    "🚨 You must join the channel(s) first to use this bot.",
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=enums.ParseMode.MARKDOWN
-                )
-                return
+            await client.send_message(
+                message.from_user.id,
+                "🚨 You must join the channel(s) first to use this bot.",
+                reply_markup=InlineKeyboardMarkup(buttons),
+                parse_mode=enums.ParseMode.MARKDOWN
+            )
+            return
 
         if len(message.command) == 1:
             buttons = [[
