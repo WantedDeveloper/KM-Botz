@@ -235,14 +235,13 @@ async def start(client, message):
                                 updated = True
 
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                        else:
-                            if message.from_user.id not in users_counted:
-                                item["joined"] = item.get("joined", 0) + 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
+                        # ✅ Request bhejte hi subscribed treat karo
+                        if message.from_user.id not in users_counted:
+                            item["joined"] = item.get("joined", 0) + 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        continue
 
                 except UserNotParticipant:
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
