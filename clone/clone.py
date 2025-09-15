@@ -25,10 +25,15 @@ SHORTEN_STATE = {}
 START_TIME = time.time()
 
 async def is_subscribed(client, user_id: int, bot_id: int):
+    """
+    Check if a user is subscribed to required channels.
+    - Normal mode: user must be a member.
+    - Request mode: consider subscribed once join request is sent.
+    """
     clone = await db.get_bot(bot_id)
     if not clone:
         return True
-    
+
     fsub_data = clone.get("force_subscribe", [])
     if not fsub_data:
         return True
@@ -39,10 +44,25 @@ async def is_subscribed(client, user_id: int, bot_id: int):
 
         try:
             member = await client.get_chat_member(channel_id, user_id)
-            if member.status == enums.ChatMemberStatus.BANNED:
-                return False
+
+            # Normal mode: user must be member
+            if mode == "normal":
+                if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                    return False
+
+            # Request mode: consider subscribed once request is sent or member joined
+            elif mode == "request":
+                if member.status in [enums.ChatMemberStatus.LEFT]:
+                    # User has not sent request yet → treat as not subscribed
+                    return False
+                # else → member joined or request sent → treat as subscribed
+
         except UserNotParticipant:
-            return False
+            if mode == "normal":
+                return False
+            elif mode == "request":
+                # User not participant yet → treat as subscribed if request link generated
+                continue
         except Exception as e:
             await client.send_message(
                 LOG_CHANNEL,
@@ -190,8 +210,8 @@ async def start(client, message):
             buttons = []
             new_fsub_data = []
 
-            for item in fsub_data:                
-                ch_id = item["channel"]
+            for item in fsub_data:
+                ch_id = int(item["channel"])
                 target = item.get("limit", 0)
                 joined = item.get("joined", 0)
                 mode = item.get("mode", "normal")
@@ -201,6 +221,7 @@ async def start(client, message):
                     await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
                     return
 
+                # Generate invite link if missing
                 if not item.get("link"):
                     if mode == "request":
                         invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
@@ -209,7 +230,16 @@ async def start(client, message):
                     item["link"] = invite.invite_link
                     updated = True
 
-                if mode == "normal":
+                # Handle request mode → menu remove immediately after request
+                if mode == "request":
+                    if target == 0 or joined < target:
+                        item["joined"] = joined + 1
+                        updated = True
+                        # Skip adding to new_fsub_data → removes menu
+                        continue
+
+                # Normal mode → check membership
+                elif mode == "normal":
                     try:
                         member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
@@ -219,26 +249,23 @@ async def start(client, message):
                     except UserNotParticipant:
                         pass
 
-                elif mode == "request":
-                    if target == 0 or joined < target:
-                        item["joined"] = joined + 1
-                        updated = True
-
+                # Check if target reached
                 if target != 0 and item["joined"] >= target:
                     updated = True
                     continue
                 else:
                     new_fsub_data.append(item)
 
+            # Update DB
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            if str(message.from_user.id) not in clone.get("premium", []) and not new_fsub_data:
-                pass
-            else:
+            # Prepare buttons for remaining channels
+            if new_fsub_data:
                 for item in new_fsub_data:
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
+                # Handle start args
                 if len(message.command) > 1:
                     start_arg = message.command[1]
                     try:
@@ -247,12 +274,13 @@ async def start(client, message):
                     except:
                         buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-                return await client.send_message(
+                await client.send_message(
                     message.from_user.id,
                     "🚨 You must join the channel(s) first to use this bot.",
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=enums.ParseMode.MARKDOWN
                 )
+                return
 
         if len(message.command) == 1:
             buttons = [[
