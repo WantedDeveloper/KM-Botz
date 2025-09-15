@@ -251,6 +251,9 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
+            if not force_sub_done:
+                return 
+
             if buttons:
                 if len(message.command) > 1:
                     start_arg = message.command[1]
