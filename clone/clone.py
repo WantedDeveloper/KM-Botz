@@ -204,22 +204,24 @@ async def start(client, message):
             await clonedb.add_user(me.id, message.from_user.id)
             await db.increment_users_count(me.id)
 
-        if not await is_subscribed(client, message.from_user.id, me.id):
-            fsub_data = clone.get("force_subscribe", [])
+        # --- FSUB check using is_subscribed ---
+        subscribed = await is_subscribed(client, message.from_user.id, me.id)
+        fsub_data = clone.get("force_subscribe", [])
+        buttons = []
+
+        if not subscribed and fsub_data:
             updated = False
-            buttons = []
             new_fsub_data = []
+            clone_client = get_client(me.id)
+            if not clone_client:
+                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
+                return
 
             for item in fsub_data:
                 ch_id = int(item["channel"])
                 target = item.get("limit", 0)
                 joined = item.get("joined", 0)
                 mode = item.get("mode", "normal")
-
-                clone_client = get_client(me.id)
-                if not clone_client:
-                    await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
-                    return
 
                 # Generate invite link if missing
                 if not item.get("link"):
@@ -230,42 +232,30 @@ async def start(client, message):
                     item["link"] = invite.invite_link
                     updated = True
 
-                # Handle request mode → menu remove immediately after request
+                # Request mode → remove menu immediately after request
                 if mode == "request":
                     if target == 0 or joined < target:
                         item["joined"] = joined + 1
                         updated = True
-                        # Skip adding to new_fsub_data → removes menu
                         continue
 
                 # Normal mode → check membership
                 elif mode == "normal":
                     try:
                         member = await clone_client.get_chat_member(ch_id, message.from_user.id)
-                        if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                            if target == 0 or joined < target:
-                                item["joined"] = joined + 1
-                                updated = True
+                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            new_fsub_data.append(item)
                     except UserNotParticipant:
-                        pass
-
-                # Check if target reached
-                if target != 0 and item["joined"] >= target:
-                    updated = True
-                    continue
-                else:
-                    new_fsub_data.append(item)
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        new_fsub_data.append(item)
 
             # Update DB
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            # Prepare buttons for remaining channels
-            if new_fsub_data:
-                for item in new_fsub_data:
-                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-
-                # Handle start args
+            # Show FSUB buttons
+            if buttons:
                 if len(message.command) > 1:
                     start_arg = message.command[1]
                     try:
@@ -280,7 +270,7 @@ async def start(client, message):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=enums.ParseMode.MARKDOWN
                 )
-                return
+                return  # Stop further start logic if FSUB pending
 
         if len(message.command) == 1:
             buttons = [[
