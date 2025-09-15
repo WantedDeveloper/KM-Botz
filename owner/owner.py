@@ -689,7 +689,6 @@ async def show_fsub_menu(client, message, bot_id):
             ch_link = btn.get("link", None)
             mode = btn.get("mode", "normal")
 
-            # Determine status without removing channel
             if target != 0 and joined >= target:
                 status = "✅ Completed"
             elif target == 0:
@@ -701,7 +700,6 @@ async def show_fsub_menu(client, message, bot_id):
 
             text += f"**{ch_name}** ({'✅ Normal' if mode=='normal' else '📝 Request'})\n{progress} | {status}\n\n"
 
-            # Add buttons
             row = []
             if ch_link:
                 row.append(InlineKeyboardButton(ch_name, url=ch_link))
@@ -711,10 +709,8 @@ async def show_fsub_menu(client, message, bot_id):
             row.append(InlineKeyboardButton("❌", callback_data=f"remove_fsub_{i}_{bot_id}"))
             buttons.append(row)
 
-            # Always keep in new_fsub_data to prevent accidental removal
             new_fsub_data.append(btn)
 
-        # Update DB once to ensure consistency
         await db.update_clone(bot_id, {"force_subscribe": new_fsub_data})
 
         user_id = message.from_user.id
@@ -733,11 +729,10 @@ async def show_fsub_menu(client, message, bot_id):
             text=f"{script.FSUB_TXT}\n\n{text}",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
-
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
-            f"⚠️ Show Force Subscribe Menu Error:\n\n<code>{e}</code>"
+            f"⚠️ Show Force Subscribe Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
         )
         print(f"⚠️ Show Force Subscribe Menu Error: {e}")
 
