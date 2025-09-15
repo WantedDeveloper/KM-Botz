@@ -209,18 +209,6 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
-                # Create invite link if missing
-                if not item.get("link"):
-                    try:
-                        if mode == "request":
-                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
-                        else:
-                            invite = await clone_client.create_chat_invite_link(ch_id)
-                        item["link"] = invite.invite_link
-                        updated = True
-                    except Exception as e:
-                        print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
-
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
@@ -228,6 +216,7 @@ async def start(client, message):
                         if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                         else:
+                            # joined → count update
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
@@ -235,15 +224,18 @@ async def start(client, message):
                                 updated = True
 
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
-                            # ✅ Treat as joined
+                        # ✅ Instant start menu on join request
+                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR,
+                                             enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                                # 🔥 Instant remove from fsub menu
-                                continue  # skip adding join button
+
+                            # 🔥 skip this fsub item → user considered subscribed
+                            continue  # next fsub item, no join button
+
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
