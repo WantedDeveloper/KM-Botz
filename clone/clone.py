@@ -236,14 +236,15 @@ async def start(client, message):
 
                     elif mode == "request":
                         if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
-                            # ✅ Treat as joined (includes RESTRICTED)
+                            # ✅ Treat as joined
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
+                                # 🔥 Instant remove from fsub menu
+                                continue  # skip adding join button
                         else:
-                            # LEFT/BANNED → show join button
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except UserNotParticipant:
