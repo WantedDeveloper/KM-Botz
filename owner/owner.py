@@ -679,23 +679,8 @@ async def show_fsub_menu(client, message, bot_id):
         fsub_data = clone.get("force_subscribe", [])
 
         buttons = []
-        changed = False
         new_fsub_data = []
         text = ""
-
-        for i, btn in enumerate(fsub_data):
-            target = btn.get("limit", 0)
-            joined = btn.get("joined", 0)
-
-            if target != 0 and joined >= target:
-                changed = True
-                continue
-
-            new_fsub_data.append(btn)
-
-        if changed:
-            await db.update_clone(bot_id, {"force_subscribe": new_fsub_data})
-            fsub_data = new_fsub_data
 
         for i, btn in enumerate(fsub_data):
             target = btn.get("limit", 0)
@@ -704,15 +689,19 @@ async def show_fsub_menu(client, message, bot_id):
             ch_link = btn.get("link", None)
             mode = btn.get("mode", "normal")
 
-            if target == 0:
+            # Determine status without removing channel
+            if target != 0 and joined >= target:
+                status = "✅ Completed"
+            elif target == 0:
                 status = "♾️ Unlimited"
-                progress = f"👥 {joined} joined"
             else:
                 status = "⏳ Active"
-                progress = f"👥 {joined}/{target}"
+
+            progress = f"👥 {joined}" if target == 0 else f"👥 {joined}/{target}"
 
             text += f"**{ch_name}** ({'✅ Normal' if mode=='normal' else '📝 Request'})\n{progress} | {status}\n\n"
 
+            # Add buttons
             row = []
             if ch_link:
                 row.append(InlineKeyboardButton(ch_name, url=ch_link))
@@ -722,27 +711,33 @@ async def show_fsub_menu(client, message, bot_id):
             row.append(InlineKeyboardButton("❌", callback_data=f"remove_fsub_{i}_{bot_id}"))
             buttons.append(row)
 
+            # Always keep in new_fsub_data to prevent accidental removal
+            new_fsub_data.append(btn)
+
+        # Update DB once to ensure consistency
+        await db.update_clone(bot_id, {"force_subscribe": new_fsub_data})
+
         user_id = message.from_user.id
         user_data = await db.get_premium_user(user_id)
         is_premium = bool(user_data)
+
         if is_premium or len(fsub_data) < 4:
             buttons.append([InlineKeyboardButton("➕ Add Channel", callback_data=f"add_fsub_{bot_id}")])
 
         buttons.append([InlineKeyboardButton("⬅️ Back", callback_data=f"manage_{bot_id}")])
 
-        if fsub_data:
-            text = text
-        else:
+        if not fsub_data:
             text = '📢 No active Force Subscribe channels.\n\n➕ Add one below:'
 
         await message.edit_text(
             text=f"{script.FSUB_TXT}\n\n{text}",
             reply_markup=InlineKeyboardMarkup(buttons)
         )
+
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
-            f"⚠️ Show Force Subscribe Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
+            f"⚠️ Show Force Subscribe Menu Error:\n\n<code>{e}</code>"
         )
         print(f"⚠️ Show Force Subscribe Menu Error: {e}")
 
