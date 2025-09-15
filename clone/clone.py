@@ -187,20 +187,16 @@ async def start(client, message):
 
         if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
-            buttons = []
             updated = False
             new_fsub_data = []
-
-            clone_client = get_client(me.id)
-            if not clone_client:
-                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
-                return
+            buttons = []
 
             for item in fsub_data:
                 ch_id = item["channel"]
                 target = item.get("limit", 0)
                 joined = item.get("joined", 0)
                 mode = item.get("mode", "normal")
+                users_counted = item.get("users_counted", [])
 
                 if not item.get("link"):
                     try:
@@ -213,31 +209,36 @@ async def start(client, message):
                     except Exception as e:
                         print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
 
+                incremented = False
                 try:
+                    member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                     if mode == "normal":
-                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
-                            if target == 0 or joined < target:
+                            if message.from_user.id not in users_counted:
                                 item["joined"] = joined + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
                                 updated = True
-                                new_fsub_data.append(item)
-                            else:
-                                pass
+                                incremented = True
                     elif mode == "request":
-                        if target == 0 or joined < target:
+                        if message.from_user.id not in users_counted:
                             item["joined"] = joined + 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
                             updated = True
-                            if target == 0 or item["joined"] < target:
-                                new_fsub_data.append(item)
-                        else:
-                            pass
+                            incremented = True
                 except UserNotParticipant:
-                    new_fsub_data.append(item)
+                    if mode == "request" and message.from_user.id not in users_counted:
+                        item["joined"] = joined + 1
+                        users_counted.append(message.from_user.id)
+                        item["users_counted"] = users_counted
+                        updated = True
+                        incremented = True
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
-                    new_fsub_data.append(item)
 
-                if item in new_fsub_data:
+                if target == 0 or item["joined"] < target:
+                    new_fsub_data.append(item)
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
             if updated:
