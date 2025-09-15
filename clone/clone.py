@@ -203,6 +203,7 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
+                # Create invite link if missing
                 if not item.get("link"):
                     try:
                         if mode == "request":
@@ -219,7 +220,7 @@ async def start(client, message):
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
-                    # --- Normal mode ---
+                    # NORMAL mode
                     if mode == "normal":
                         if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             if message.from_user.id not in users_counted:
@@ -227,9 +228,9 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                            show_button = False  # Hide button if already member
+                            show_button = False  # Hide button
 
-                    # --- Request mode ---
+                    # REQUEST mode
                     elif mode == "request":
                         if member.status in [
                             enums.ChatMemberStatus.MEMBER,
@@ -242,15 +243,22 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                            show_button = False  # Hide button if already requested or member
+                            show_button = False
 
                 except UserNotParticipant:
-                    # User has not joined yet, show join button
-                    show_button = True
+                    # REQUEST mode: user sent join request
+                    if mode == "request":
+                        if message.from_user.id not in users_counted:
+                            item["joined"] += 1  # Increment immediately
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        show_button = False
+
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-                # Only append if limit not reached
+                # Append to new fsub data and buttons
                 if target == 0 or item["joined"] < target:
                     new_fsub_data.append(item)
                     if show_button:
@@ -259,6 +267,7 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
+            # Try again button
             if len(message.command) > 1:
                 start_arg = message.command[1]
                 try:
