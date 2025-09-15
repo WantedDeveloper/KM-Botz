@@ -187,9 +187,9 @@ async def start(client, message):
 
         if not await is_subscribed(client, message.from_user.id, me.id):
             fsub_data = clone.get("force_subscribe", [])
-            updated = False
             new_fsub_data = []
             buttons = []
+            updated = False
 
             clone_client = get_client(me.id)
             if not clone_client:
@@ -225,13 +225,23 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                                 incremented = True
+
                     elif mode == "request":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] = joined + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                            incremented = True
+                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.ADMINISTRATOR]:
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = joined + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+                                incremented = True
+                        elif member.status == enums.ChatMemberStatus.RESTRICTED:
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = joined + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+                                incremented = True
+
                 except UserNotParticipant:
                     if mode == "request" and message.from_user.id not in users_counted:
                         item["joined"] = joined + 1
