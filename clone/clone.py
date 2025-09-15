@@ -191,6 +191,11 @@ async def start(client, message):
             new_fsub_data = []
             buttons = []
 
+            clone_client = get_client(me.id)
+            if not clone_client:
+                await client.send_message(message.from_user.id, "⚠️ Clone bot not running. Start it first!")
+                return
+
             for item in fsub_data:
                 ch_id = item["channel"]
                 target = item.get("limit", 0)
