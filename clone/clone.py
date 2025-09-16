@@ -228,8 +228,10 @@ async def start(client, message):
                             item["link"] = invite.invite_link
                             updated = True
                         else:
+                            item["link"] = None
                             print(f"⚠️ Failed to create invite for channel {ch_id}")
                     except Exception as e:
+                        item["link"] = None
                         print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                 try:
@@ -248,8 +250,7 @@ async def start(client, message):
                                 updated = True
                             continue
                         else:
-                            if item.get("link"):
-                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     elif mode == "request":
                         if member.status in [
@@ -265,8 +266,7 @@ async def start(client, message):
                                 updated = True
                             continue
                         else:
-                            if item.get("link"):
-                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except UserNotParticipant:
                     if mode == "request":
@@ -277,8 +277,7 @@ async def start(client, message):
                             updated = True
                         continue
                     else:
-                        if item.get("link"):
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
@@ -289,25 +288,26 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            if len(message.command) > 1:
-                start_arg = message.command[1]
-                try:
-                    kk, file_id = start_arg.split("_", 1)
-                    buttons.append([
-                        InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")
-                    ])
-                except:
-                    buttons.append([
-                        InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")
-                    ])
+            if buttons:
+                if len(message.command) > 1:
+                    start_arg = message.command[1]
+                    try:
+                        kk, file_id = start_arg.split("_", 1)
+                        buttons.append([
+                            InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")
+                        ])
+                    except:
+                        buttons.append([
+                            InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")
+                        ])
 
-            await client.send_message(
-                message.from_user.id,
-                "🚨 You must join the channel(s) first to use this bot.",
-                reply_markup=InlineKeyboardMarkup(buttons),
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-            return
+                await client.send_message(
+                    message.from_user.id,
+                    "🚨 You must join the channel(s) first to use this bot.",
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=enums.ParseMode.MARKDOWN
+                )
+                return
 
         if len(message.command) == 1:
             buttons = [[
@@ -665,8 +665,6 @@ async def start(client, message):
             f"⚠️ Clone Start Bot Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
         )
         print(f"⚠️ Clone Start Bot Error: {e}")
-        import traceback
-        traceback.print_exc()
 
 @Client.on_message(filters.command("help") & filters.private & filters.incoming)
 async def help(client, message):
