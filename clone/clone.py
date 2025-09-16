@@ -268,25 +268,22 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            if len(message.command) > 1:
-                start_arg = message.command[1]
-                try:
-                    kk, file_id = start_arg.split("_", 1)
-                    buttons.append([
-                        InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")
-                    ])
-                except:
-                    buttons.append([
-                        InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")
-                    ])
+            if buttons:
+                if len(message.command) > 1:
+                    start_arg = message.command[1]
+                    try:
+                        kk, file_id = start_arg.split("_", 1)
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                    except:
+                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
 
-            await client.send_message(
-                message.from_user.id,
-                "🚨 You must join the channel(s) first to use this bot.",
-                reply_markup=InlineKeyboardMarkup(buttons),
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-            return
+                await client.send_message(
+                    message.from_user.id,
+                    "🚨 You must join the channel(s) first to use this bot.",
+                    reply_markup=InlineKeyboardMarkup(buttons),
+                    parse_mode=enums.ParseMode.MARKDOWN
+                )
+                return
 
         if len(message.command) == 1:
             buttons = [[
