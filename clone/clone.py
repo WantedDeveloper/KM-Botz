@@ -238,28 +238,18 @@ async def start(client, message):
 
                 except UserNotParticipant:
                     if item.get("link"):
-                        if mode == "request":
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                            if message.from_user.id not in users_counted:
-                                item["joined"] = joined + 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
-                        else:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    if mode == "request" and message.from_user.id not in users_counted:
+                        item["joined"] = joined + 1
+                        users_counted.append(message.from_user.id)
+                        item["users_counted"] = users_counted
+                        updated = True
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-                if mode == "request":
-                    if item.get("limit", 0) == 0:
-                        new_fsub_data.append(item)
-                    elif item.get("joined", 0) < item.get("limit", 0):
-                        new_fsub_data.append(item)
-                else:
-                    if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
-                        new_fsub_data.append(item)
+                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
+                    new_fsub_data.append(item)
 
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
