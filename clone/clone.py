@@ -244,6 +244,7 @@ async def start(client, message):
                         users_counted.append(message.from_user.id)
                         item["users_counted"] = users_counted
                         updated = True
+                    continue
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
