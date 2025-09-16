@@ -41,19 +41,33 @@ async def is_subscribed(client, user_id: int, bot_id: int):
             member = await client.get_chat_member(channel_id, user_id)
 
             if mode == "normal":
-                if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+                if member.status in [
+                    enums.ChatMemberStatus.MEMBER,
+                    enums.ChatMemberStatus.ADMINISTRATOR,
+                    enums.ChatMemberStatus.OWNER
+                ]:
                     continue
                 else:
                     return False
 
             elif mode == "request":
-                if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
+                # ✅ Allow both pending + approved requests
+                if member.status in [
+                    enums.ChatMemberStatus.MEMBER,
+                    enums.ChatMemberStatus.ADMINISTRATOR,
+                    enums.ChatMemberStatus.OWNER,
+                    enums.ChatMemberStatus.RESTRICTED  # pending requests show here
+                ]:
                     continue
                 else:
                     return False
 
         except UserNotParticipant:
+            # ⚠️ In request mode, allow "pending join request"
+            if mode == "request":
+                return True   # don't block
             return False
+
         except Exception as e:
             print(f"⚠️ is_subscribed error {channel_id}: {e}")
             return False
@@ -219,7 +233,12 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                     elif mode == "request":
-                        if member.status in [enums.ChatMemberStatus.MEMBER, enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER, enums.ChatMemberStatus.RESTRICTED]:
+                        if member.status in [
+                            enums.ChatMemberStatus.MEMBER,
+                            enums.ChatMemberStatus.ADMINISTRATOR,
+                            enums.ChatMemberStatus.OWNER,
+                            enums.ChatMemberStatus.RESTRICTED  # pending join request
+                        ]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
                                 users_counted.append(message.from_user.id)
@@ -229,6 +248,8 @@ async def start(client, message):
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except UserNotParticipant:
+                    if mode == "request":
+                        continue
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
@@ -336,6 +357,7 @@ async def start(client, message):
 
                 msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
                 f_caption = None
+                sent_msg = None
                 if msg.media:
                     file = getattr(msg, msg.media.value)
                     file_name = getattr(file, "file_name", None) or "Media"
@@ -387,13 +409,14 @@ async def start(client, message):
                 else:
                     sent_msg = await msg.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
 
-                if clone.get("auto_delete", False):
-                    auto_delete_time = clone.get("auto_delete_time", 1)
-                    k = await sent_msg.reply(
-                        clone.get('auto_delete_msg', script.AD_TXT).format(time=auto_delete_time),
-                        quote=True
-                    )
-                    asyncio.create_task(auto_delete_message(client, sent_msg, k, auto_delete_time))
+                if sent_msg:
+                    if clone.get("auto_delete", False):
+                        auto_delete_time = clone.get("auto_delete_time", 1)
+                        k = await sent_msg.reply(
+                            clone.get('auto_delete_msg', script.AD_TXT).format(time=auto_delete_time),
+                            quote=True
+                        )
+                        asyncio.create_task(auto_delete_message(client, sent_msg, k, auto_delete_time))
                 return
             except Exception as e:
                 await client.send_message(
