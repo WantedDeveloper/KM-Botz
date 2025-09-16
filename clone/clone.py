@@ -51,7 +51,6 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
             elif mode == "request":
-                # ✅ Allow both pending + approved requests
                 if member.status in [
                     enums.ChatMemberStatus.MEMBER,
                     enums.ChatMemberStatus.ADMINISTRATOR,
@@ -63,9 +62,6 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
         except UserNotParticipant:
-            # ⚠️ In request mode, allow "pending join request"
-            if mode == "request":
-                return True   # don't block
             return False
 
         except Exception as e:
