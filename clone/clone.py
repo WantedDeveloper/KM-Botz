@@ -245,14 +245,16 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
+                            continue
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
-                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
-                    new_fsub_data.append(item)
+                if mode == "normal":
+                    if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
+                        new_fsub_data.append(item)
 
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
