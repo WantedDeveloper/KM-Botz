@@ -249,15 +249,15 @@ async def start(client, message):
                         continue
 
                 except UserNotParticipant:
-                    if mode == "normal":
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                    elif mode == "request":
+                    if mode == "request":
                         if message.from_user.id not in users_counted:
                             item["joined"] += 1
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
                             updated = True
                         continue
+                    else
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
@@ -268,22 +268,25 @@ async def start(client, message):
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-            if buttons:
-                if len(message.command) > 1:
-                    start_arg = message.command[1]
-                    try:
-                        kk, file_id = start_arg.split("_", 1)
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
-                    except:
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
+            if len(message.command) > 1:
+                start_arg = message.command[1]
+                try:
+                    kk, file_id = start_arg.split("_", 1)
+                    buttons.append([
+                        InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")
+                    ])
+                except:
+                    buttons.append([
+                        InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")
+                    ])
 
-                await client.send_message(
-                    message.from_user.id,
-                    "🚨 You must join the channel(s) first to use this bot.",
-                    reply_markup=InlineKeyboardMarkup(buttons),
-                    parse_mode=enums.ParseMode.MARKDOWN
-                )
-                return
+            await client.send_message(
+                message.from_user.id,
+                "🚨 You must join the channel(s) first to use this bot.",
+                reply_markup=InlineKeyboardMarkup(buttons),
+                parse_mode=enums.ParseMode.MARKDOWN
+            )
+            return
 
         if len(message.command) == 1:
             buttons = [[
