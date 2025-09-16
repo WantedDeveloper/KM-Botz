@@ -262,7 +262,7 @@ async def start(client, message):
                 if updated:
                     await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
 
-                if buttons:
+                if not buttons:
                     if len(message.command) > 1:
                         start_arg = message.command[1]
                         try:
@@ -282,6 +282,8 @@ async def start(client, message):
                         parse_mode=enums.ParseMode.MARKDOWN
                     )
                     return
+                else:
+                    pass
             except Exception as e:
                 await client.send_message(
                     LOG_CHANNEL,
