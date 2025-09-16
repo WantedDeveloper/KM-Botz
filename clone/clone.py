@@ -62,10 +62,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
         except UserNotParticipant:
-            if mode == "normal":
-                return False
-            elif mode == "request":
-                return False
+            return False
 
         except Exception as e:
             print(f"⚠️ is_subscribed error {channel_id}: {e}")
