@@ -283,8 +283,7 @@ async def start(client, message):
                     pass
                 else:
                     for item in new_fsub_data:
-                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
-                    
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 if buttons:
                     if len(message.command) > 1:
