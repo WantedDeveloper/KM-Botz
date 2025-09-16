@@ -228,19 +228,15 @@ async def start(client, message):
                             item["link"] = invite.invite_link
                             updated = True
                         except Exception as e:
-                            item["link"] = None
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                     try:
-                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
-
                         if message.from_user.id not in users_counted:
                             item["joined"] = joined + 1
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
                             updated = True
                         continue
-
                     except UserNotParticipant:
                         if item.get("link"):
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
@@ -955,11 +951,23 @@ async def batch(client, message):
                 await asyncio.sleep(0.1)
                 continue
 
-            await client.copy_message(
-                chat_id=MESSAGE_CHANNEL,
-                from_chat_id=f_chat_id,
-                message_id=msg.id
-            )
+            sent = False
+            while not sent:
+                try:
+                    await client.copy_message(
+                        chat_id=MESSAGE_CHANNEL,
+                        from_chat_id=f_chat_id,
+                        message_id=msg.id
+                    )
+                    sent = True
+                except FloodWait as e:
+                    wait_time = e.value
+                    print(f"⏳ Flood wait: {wait_time} seconds... Resuming after wait.")
+                    try:
+                        await sts.edit(f"⚠️ FloodWait: Sleeping {wait_time}s before resuming...")
+                    except:
+                        pass
+                    await asyncio.sleep(wait_time)
 
             file = {
                 "channel_id": f_chat_id,
@@ -968,7 +976,7 @@ async def batch(client, message):
             og_msg += 1
             outlist.append(file)
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
         filename = f"batchmode_{message.from_user.id}.json"
         with open(filename, "w+", encoding="utf-8") as out:
@@ -1598,6 +1606,13 @@ async def cb_handler(client: Client, query: CallbackQuery):
         print(f"⚠️ Clone Callback Handler Error: {e}")
         await query.answer("❌ An error occurred. The admin has been notified.", show_alert=True)
 
+async def is_admin(client, chat_id, user_id):
+    try:
+        member = await client.get_chat_member(chat_id, user_id)
+        return member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+    except Exception:
+        return False
+
 def mask_partial(word):
     if len(word) <= 2:
         return word[0] + "*"
@@ -1695,6 +1710,8 @@ async def message_capture(client: Client, message: Message):
             header = clone.get("header", None)
             footer = clone.get("footer", None)
 
+            bot_is_admin = await is_admin(client, message.chat.id, me.id)
+
             selected_caption = random.choice(script.CAPTION_LIST)
 
             text = message.text or message.caption or ""
@@ -1706,14 +1723,20 @@ async def message_capture(client: Client, message: Message):
                 else:
                     text = text
 
-            if text != original_text:
-                await message.edit(text)
-                notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
+            if bot_is_admin:
+                if text != original_text:
+                    await message.edit(text)
+                    notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
 
+                    for mod_id in moderators:
+                        await client.send_message(chat_id=mod_id, text=notify_msg)
+                    if owner_id:
+                        await client.send_message(chat_id=owner_id, text=notify_msg)
+            else:
                 for mod_id in moderators:
-                    await client.send_message(chat_id=mod_id, text=notify_msg)
+                    await client.send_message(chat_id=mod_id, text="⚠️ Bot is not admin.")
                 if owner_id:
-                    await client.send_message(chat_id=owner_id, text=notify_msg)
+                    await client.send_message(chat_id=owner_id, text="⚠️ Bot is not admin.")
 
             new_text = ""
 
@@ -1728,21 +1751,27 @@ async def message_capture(client: Client, message: Message):
             if footer:
                 new_text += f"\n\n<blockquote>{footer}</blockquote>"
 
-            if me.username and me.username in text:
-                await message.delete()
+            if bot_is_admin:
+                if me.username and me.username in text:
+                    await message.delete()
 
-                file_id = None
-                if message.photo:
-                    file_id = message.photo.file_id
-                elif message.video:
-                    file_id = message.video.file_id
-                elif message.document:
-                    file_id = message.document.file_id
+                    file_id = None
+                    if message.photo:
+                        file_id = message.photo.file_id
+                    elif message.video:
+                        file_id = message.video.file_id
+                    elif message.document:
+                        file_id = message.document.file_id
 
-                if file_id:
-                    await client.send_cached_media(chat_id=message.chat.id, file_id=file_id, caption=new_text, parse_mode=enums.ParseMode.HTML)
-                else:
-                    await client.send_message(chat_id=message.chat.id, text=new_text, parse_mode=enums.ParseMode.HTML)
+                    if file_id:
+                        await client.send_cached_media(chat_id=message.chat.id, file_id=file_id, caption=new_text, parse_mode=enums.ParseMode.HTML)
+                    else:
+                        await client.send_message(chat_id=message.chat.id, text=new_text, parse_mode=enums.ParseMode.HTML)
+            else:
+                for mod_id in moderators:
+                    await client.send_message(chat_id=mod_id, text="⚠️ Bot is not admin.")
+                if owner_id:
+                    await client.send_message(chat_id=owner_id, text="⚠️ Bot is not admin.")
 
             media_file_id = None
             media_type = None
@@ -1765,16 +1794,30 @@ async def message_capture(client: Client, message: Message):
                         print(f"⚠️ Duplicate media skip kiya: {media_type} ({media_file_id}) for bot {me.id}")
                         return
 
-                    await db.add_media(
-                        bot_id=me.id,
-                        msg_id=message.id,
-                        file_id=media_file_id,
-                        caption=message.caption or "",
-                        media_type=media_type,
-                        date=int(message.date.timestamp())
-                    )
-                    print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
-                    await asyncio.sleep(0.3)
+                    try:
+                        await db.add_media(
+                            bot_id=me.id,
+                            msg_id=message.id,
+                            file_id=media_file_id,
+                            caption=message.caption or "",
+                            media_type=media_type,
+                            date=int(message.date.timestamp())
+                        )
+                        print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
+                    except FloodWait as e:
+                        print(f"⏳ FloodWait: waiting {e.value}s before retry add_media")
+                        await asyncio.sleep(e.value)
+                        await db.add_media(
+                            bot_id=me.id,
+                            msg_id=message.id,
+                            file_id=media_file_id,
+                            caption=message.caption or "",
+                            media_type=media_type,
+                            date=int(message.date.timestamp())
+                        )
+                        print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
+
+                    await asyncio.sleep(0.2)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
