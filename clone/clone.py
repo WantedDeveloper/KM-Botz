@@ -232,21 +232,11 @@ async def start(client, message):
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
-                    if mode == "normal":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] = joined + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
-
-                    elif mode == "request":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] = joined + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
+                    if message.from_user.id not in users_counted:
+                        item["joined"] = joined + 1
+                        users_counted.append(message.from_user.id)
+                        item["users_counted"] = users_counted
+                        updated = True
 
                 except UserNotParticipant:
                     if mode == "request":
@@ -255,7 +245,6 @@ async def start(client, message):
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
                             updated = True
-                        continue
                     else:
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
