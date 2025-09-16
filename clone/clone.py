@@ -4,7 +4,7 @@ from shortzy import Shortzy
 from validators import domain
 from pyrogram import Client, filters, enums
 from pyrogram.types import *
-from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
+from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid, ChatAdminRequired
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
 from pyrogram.file_id import FileId
 from struct import pack
@@ -164,12 +164,29 @@ def get_size(size):
 async def auto_delete_message(client, msg_to_delete, notice_msg, hours):
     try:
         await asyncio.sleep(hours * 3600)
-        await msg_to_delete.delete()
-        await notice_msg.edit_text("Your File/Video is successfully deleted!!!")
+
+        try:
+            await msg_to_delete.delete()
+        except Exception as e:
+            print(f"⚠️ Could not delete message: {e}")
+
+        if notice_msg:
+            try:
+                await notice_msg.edit_text("✅ Your File/Video is successfully deleted!")
+            except Exception as e:
+                print(f"⚠️ Could not edit notice_msg: {e}")
+                try:
+                    await client.send_message(
+                        notice_msg.chat.id,
+                        "✅ Your File/Video is successfully deleted!"
+                    )
+                except Exception as e2:
+                    print(f"⚠️ Could not send fallback message: {e2}")
+
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
-            f"⚠️ Clone Auto Delete Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
+            f"⚠️ Clone Auto Delete Error:\n\n<code>{e}</code>"
         )
         print(f"⚠️ Clone Auto Delete Error: {e}")
 
@@ -1606,11 +1623,23 @@ async def cb_handler(client: Client, query: CallbackQuery):
         print(f"⚠️ Clone Callback Handler Error: {e}")
         await query.answer("❌ An error occurred. The admin has been notified.", show_alert=True)
 
-async def is_admin(client, chat_id, user_id):
+from pyrogram import enums
+from pyrogram.errors import UserNotParticipant, ChatAdminRequired
+
+async def is_admin(client, chat_id: int, user_id: int) -> bool:
     try:
         member = await client.get_chat_member(chat_id, user_id)
-        return member.status in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-    except Exception:
+        return member.status in [
+            enums.ChatMemberStatus.ADMINISTRATOR,
+            enums.ChatMemberStatus.OWNER
+        ]
+    except UserNotParticipant:
+        return False
+    except ChatAdminRequired:
+        print(f"⚠️ Bot is not admin in chat {chat_id}, cannot check admin status.")
+        return False
+    except Exception as e:
+        print(f"⚠️ is_admin() failed for user {user_id} in chat {chat_id}: {e}")
         return False
 
 def mask_partial(word):
