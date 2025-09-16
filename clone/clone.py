@@ -993,7 +993,7 @@ async def batch(client, message):
             og_msg += 1
             outlist.append(file)
 
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.3)
 
         filename = f"batchmode_{message.from_user.id}.json"
         with open(filename, "w+", encoding="utf-8") as out:
@@ -1347,17 +1347,28 @@ async def contact(client, message):
             if c_msg.text and c_msg.text.lower() == "/cancel":
                 return await message.reply("🚫 Contact cancelled.")
 
-        text = (
+        header = (
             f"📩 **New Contact Message**\n\n"
             f"👤 User: [{message.from_user.first_name}](tg://user?id={message.from_user.id})\n"
             f"🆔 ID: `{message.from_user.id}`\n\n"
-            f"💬 Message:\n{c_msg.text}"
         )
 
-        if owner_id:
-            await client.send_message(owner_id, text, reply_to_message_id=None)
-        for mod_id in moderators:
-            await client.send_message(mod_id, text, reply_to_message_id=None)
+        if c_msg.photo or c_msg.video or c_msg.document or c_msg.animation or c_msg.audio or c_msg.voice:
+            caption = f"{header}\n\n💬 Caption:\n{c_msg.caption or 'No caption'}"
+
+            if owner_id:
+                await c_msg.copy(owner_id, caption=caption)
+            for mod_id in moderators:
+                await c_msg.copy(mod_id, caption=caption)
+
+        # Else, it's just text
+        elif c_msg.text:
+            text = f"{header}\n\n💬 Message:\n{c_msg.text}"
+
+            if owner_id:
+                await client.send_message(owner_id, text)
+            for mod_id in moderators:
+                await client.send_message(mod_id, text)
 
         await message.reply_text("✅ Your message has been sent to the admin!")
     except Exception as e:
@@ -1389,7 +1400,7 @@ async def reply(client, message):
         if not message.reply_to_message:
             return
 
-        if "🆔 ID:" not in message.reply_to_message.text:
+        if not message.reply_to_message.text or "🆔 ID:" not in message.reply_to_message.text:
             return
 
         try:
@@ -1623,9 +1634,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
         print(f"⚠️ Clone Callback Handler Error: {e}")
         await query.answer("❌ An error occurred. The admin has been notified.", show_alert=True)
 
-from pyrogram import enums
-from pyrogram.errors import UserNotParticipant, ChatAdminRequired
-
 async def is_admin(client, chat_id: int, user_id: int) -> bool:
     try:
         member = await client.get_chat_member(chat_id, user_id)
@@ -1846,7 +1854,7 @@ async def message_capture(client: Client, message: Message):
                         )
                         print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
 
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(0.3)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
