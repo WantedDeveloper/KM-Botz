@@ -235,6 +235,7 @@ async def start(client, message):
                             item["link"] = None
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
+                    print("Fsub buttons:", buttons)
                     try:
                         member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
@@ -251,7 +252,8 @@ async def start(client, message):
                                     updated = True
                                 continue
                             else:
-                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                                if item.get("link"):
+                                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                         elif mode == "request":
                             if member.status in [
@@ -267,7 +269,8 @@ async def start(client, message):
                                     updated = True
                                 continue
                             else:
-                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                                if item.get("link"):
+                                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     except UserNotParticipant:
                         if mode == "request":
@@ -278,7 +281,8 @@ async def start(client, message):
                                 updated = True
                             continue
                         else:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            if item.get("link"):
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     except Exception as e:
                         print(f"⚠️ Error checking member for {ch_id}: {e}")
