@@ -287,7 +287,7 @@ async def start(client, message):
                 reply_markup=InlineKeyboardMarkup(buttons),
                 parse_mode=enums.ParseMode.MARKDOWN
             )
-            return False
+            return
 
         if len(message.command) == 1:
             buttons = [[
