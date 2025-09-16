@@ -252,7 +252,7 @@ async def start(client, message):
                     if mode == "normal":
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                     elif mode == "request":
-                        if message.from_user.id not in users_counted:
+                        if message.from_user.id in users_counted:
                             item["joined"] += 1
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
