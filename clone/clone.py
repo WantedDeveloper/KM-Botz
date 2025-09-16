@@ -665,6 +665,8 @@ async def start(client, message):
             f"⚠️ Clone Start Bot Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
         )
         print(f"⚠️ Clone Start Bot Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 @Client.on_message(filters.command("help") & filters.private & filters.incoming)
 async def help(client, message):
