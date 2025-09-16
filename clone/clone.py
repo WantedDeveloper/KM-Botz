@@ -336,7 +336,6 @@ async def start(client, message):
 
                 msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
                 f_caption = None
-                sent_msg = None
                 if msg.media:
                     file = getattr(msg, msg.media.value)
                     file_name = getattr(file, "file_name", None) or "Media"
