@@ -242,12 +242,18 @@ async def start(client, message):
                             continue
 
                     elif mode == "request":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] = joined + 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                        continue
+                        if member.status in [
+                            enums.ChatMemberStatus.MEMBER,
+                            enums.ChatMemberStatus.ADMINISTRATOR,
+                            enums.ChatMemberStatus.OWNER,
+                            enums.ChatMemberStatus.RESTRICTED
+                        ]:
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = joined + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+                            continue
 
                 except UserNotParticipant:
                     pass
