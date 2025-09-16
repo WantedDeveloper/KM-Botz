@@ -24,6 +24,22 @@ SHORTEN_STATE = {}
 
 START_TIME = time.time()
 
+async def get_me_safe(client):
+    if client in CLONE_ME and CLONE_ME[client]:
+        return CLONE_ME[client]
+
+    while True:
+        try:
+            me = await client.get_me()
+            CLONE_ME[client] = me
+            return me
+        except FloodWait as e:
+            print(f"⏳ FloodWait: waiting {e.value}s for get_me()...")
+            await asyncio.sleep(e.value)
+        except Exception as ex:
+            print(f"⚠️ get_me() failed: {ex}")
+            return None
+
 async def is_subscribed(client, user_id: int, bot_id: int):
     clone = await db.get_bot(bot_id)
     if not clone:
@@ -71,17 +87,9 @@ async def is_subscribed(client, user_id: int, bot_id: int):
     return True
 
 async def get_verify_shorted_link(client, link):
-    if client not in CLONE_ME or CLONE_ME[client] is None:
-        try:
-            CLONE_ME[client] = await client.get_me()
-        except Exception as e:
-            print(f"⚠️ get_me() failed: {e}")
-            return link
-
-    me = CLONE_ME.get(client)
+    me = await get_me_safe(client)
     if not me:
-        print("❌ Failed to get bot info (me is None)")
-        return link
+        return
 
     clone = await db.get_bot(me.id)
     if not clone:
@@ -193,16 +201,8 @@ async def auto_delete_message(client, msg_to_delete, notice_msg, hours):
 @Client.on_message(filters.command("start") & filters.private & filters.incoming)
 async def start(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -794,16 +794,8 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 @Client.on_message(filters.command(['genlink']) & filters.private)
 async def link(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -870,16 +862,8 @@ def batch_progress_bar(done, total, length=20):
 @Client.on_message(filters.command(['batch']) & filters.private)
 async def batch(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1042,16 +1026,8 @@ async def get_short_link(user, link):
 @Client.on_message(filters.command("shortener") & filters.private)
 async def shorten_handler(client: Client, message: Message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1150,16 +1126,8 @@ def broadcast_progress_bar(done: int, total: int) -> str:
 @Client.on_message(filters.command("broadcast") & filters.private)
 async def broadcast(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1266,16 +1234,8 @@ async def broadcast(client, message):
 @Client.on_message(filters.command("stats") & filters.private & filters.incoming)
 async def stats(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1316,16 +1276,8 @@ async def stats(client, message):
 @Client.on_message(filters.command("contact") & filters.private & filters.incoming)
 async def contact(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1381,16 +1333,8 @@ async def contact(client, message):
 @Client.on_message(filters.private & filters.reply)
 async def reply(client, message):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1426,16 +1370,8 @@ async def reply(client, message):
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
     try:
-        if client not in CLONE_ME or CLONE_ME[client] is None:
-            try:
-                CLONE_ME[client] = await client.get_me()
-            except Exception as e:
-                print(f"⚠️ get_me() failed: {e}")
-                return
-
-        me = CLONE_ME.get(client)
+        me = await get_me_safe(client)
         if not me:
-            print("❌ Failed to get bot info (me is None)")
             return
 
         clone = await db.get_bot(me.id)
@@ -1723,16 +1659,8 @@ async def message_capture(client: Client, message: Message):
             if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
                 return
 
-            if client not in CLONE_ME or CLONE_ME[client] is None:
-                try:
-                    CLONE_ME[client] = await client.get_me()
-                except Exception as e:
-                    print(f"⚠️ get_me() failed: {e}")
-                    return
-
-            me = CLONE_ME.get(client)
+            me = await get_me_safe(client)
             if not me:
-                print("❌ Failed to get bot info (me is None)")
                 return
 
             clone = await db.get_bot(me.id)
