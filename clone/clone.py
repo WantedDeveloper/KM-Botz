@@ -240,6 +240,8 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                             continue
+                        else:
+                            new_fsub_data.append(item)
 
                     elif mode == "request":
                         if member.status in [
@@ -253,18 +255,19 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
-                                continue
-                            else:
-                                continue
+                            continue
+                        else:
+                            new_fsub_data.append(item)
 
                 except UserNotParticipant:
-                    pass
+                    new_fsub_data.append(item)
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
-
-                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
                     new_fsub_data.append(item)
+
+                #if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
+                    #new_fsub_data.append(item)
 
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
