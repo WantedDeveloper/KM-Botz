@@ -242,7 +242,8 @@ async def start(client, message):
                                 updated = True
                             continue
                         else:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            if item.get("link"):
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     elif mode == "request":
                         if member.status in [
@@ -258,7 +259,8 @@ async def start(client, message):
                                 updated = True
                             continue
                         else:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                            if item.get("link"):
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except UserNotParticipant:
                     if mode == "request":
