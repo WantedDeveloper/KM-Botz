@@ -235,6 +235,7 @@ async def start(client, message):
                     mode = item.get("mode", "normal")
                     joined = item.get("joined", 0)
                     users_counted = item.get("users_counted", [])
+                    limit = item.get("limit", 0)
 
                     if not item.get("link"):
                         try:
@@ -247,12 +248,33 @@ async def start(client, message):
                         except Exception as e:
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
-                    try:
+                    if mode == "request":
                         if message.from_user.id not in users_counted:
                             item["joined"] = joined + 1
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
                             updated = True
+
+                        if message.from_user.id not in users_counted:
+                            if item.get("link"):
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        
+                        if item.get("limit", 0) != 0 and item["joined"] >= item["limit"]:
+                            continue
+
+                        new_fsub_data.append(item)
+                        continue
+
+                    try:
+                        member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+                        if message.from_user.id not in users_counted:
+                            item["joined"] = joined + 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+
+                        if limit == 0 or item["joined"] < limit:
+                            new_fsub_data.append(item)
                         continue
                     except UserNotParticipant:
                         if item.get("link"):
@@ -260,9 +282,6 @@ async def start(client, message):
 
                     except Exception as e:
                         print(f"⚠️ Error checking member for {ch_id}: {e}")
-
-                    if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
-                        new_fsub_data.append(item)
 
                 if updated:
                     await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
@@ -909,6 +928,10 @@ async def batch(client, message):
         if f_chat_id != l_chat_id:
             return await message.reply("❌ Chat IDs do not match.")
 
+        is_bot_admin = await is_admin(client, f_chat_id, me.id)
+        if not is_bot_admin:
+            return await message.reply("⚠️ I must be an admin in that channel/group to index messages.")
+
         chat_id = (await client.get_chat(f_chat_id)).id
 
         start_id = min(f_msg_id, l_msg_id)
@@ -932,7 +955,7 @@ async def batch(client, message):
                 continue
 
             tot += 1
-            if og_msg % 20 == 0 or tot == total_msgs:
+            if og_msg % 10 == 0 or tot == total_msgs:
                 try:
                     progress_bar = batch_progress_bar(tot, total_msgs)
                     await sts.edit(f"""
@@ -977,7 +1000,7 @@ async def batch(client, message):
             og_msg += 1
             outlist.append(file)
 
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.5)
 
         filename = f"batchmode_{message.from_user.id}.json"
         with open(filename, "w+", encoding="utf-8") as out:
