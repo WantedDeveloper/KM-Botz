@@ -242,6 +242,7 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
+                            continue
 
                     elif mode == "request":
                         if message.from_user.id not in users_counted:
