@@ -39,6 +39,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
 
         try:
             member = await client.get_chat_member(channel_id, user_id)
+
             if mode == "normal":
                 if member.status in [
                     enums.ChatMemberStatus.MEMBER,
@@ -218,6 +219,7 @@ async def start(client, message):
 
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
+
                     if mode == "normal":
                         if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
@@ -227,6 +229,7 @@ async def start(client, message):
                                 users_counted.append(message.from_user.id)
                                 item["users_counted"] = users_counted
                                 updated = True
+
                     elif mode == "request":
                         if member.status in [
                             enums.ChatMemberStatus.MEMBER,
@@ -242,8 +245,10 @@ async def start(client, message):
                             continue
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+
                 except UserNotParticipant:
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
@@ -258,9 +263,13 @@ async def start(client, message):
                     start_arg = message.command[1]
                     try:
                         kk, file_id = start_arg.split("_", 1)
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")])
+                        buttons.append([
+                            InlineKeyboardButton("♻️ Try Again", callback_data=f"checksub#{kk}#{file_id}")
+                        ])
                     except:
-                        buttons.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")])
+                        buttons.append([
+                            InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start={start_arg}")
+                        ])
 
                 await client.send_message(
                     message.from_user.id,
@@ -268,7 +277,7 @@ async def start(client, message):
                     reply_markup=InlineKeyboardMarkup(buttons),
                     parse_mode=enums.ParseMode.MARKDOWN
                 )
-                return
+            return
 
         if len(message.command) == 1:
             buttons = [[
