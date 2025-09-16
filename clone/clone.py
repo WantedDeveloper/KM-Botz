@@ -220,6 +220,17 @@ async def start(client, message):
                 mode = item.get("mode", "normal")
                 users_counted = item.get("users_counted", [])
 
+                if not item.get("link"):
+                    try:
+                        if mode == "request":
+                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
+                        else:
+                            invite = await clone_client.create_chat_invite_link(ch_id)
+                        item["link"] = invite.invite_link
+                        updated = True
+                    except Exception as e:
+                        print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
+
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
