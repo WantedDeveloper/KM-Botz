@@ -62,6 +62,8 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     return False
 
         except UserNotParticipant:
+            if mode == "request":
+                return True
             return False
 
         except Exception as e:
