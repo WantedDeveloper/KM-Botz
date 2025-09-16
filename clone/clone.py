@@ -254,7 +254,7 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                                 continue
-                            else
+                            else:
                                 continue
 
                 except UserNotParticipant:
