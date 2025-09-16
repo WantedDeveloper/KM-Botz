@@ -249,15 +249,14 @@ async def start(client, message):
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                     if mode == "request":
+                        if item.get("link"):
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+
                         if message.from_user.id not in users_counted:
                             item["joined"] = joined + 1
                             users_counted.append(message.from_user.id)
                             item["users_counted"] = users_counted
                             updated = True
-
-                        if message.from_user.id not in users_counted:
-                            if item.get("link"):
-                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                         
                         if item.get("limit", 0) != 0 and item["joined"] >= item["limit"]:
                             continue
