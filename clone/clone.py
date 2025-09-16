@@ -219,15 +219,12 @@ async def start(client, message):
                 users_counted = item.get("users_counted", [])
 
                 if not item.get("link"):
-                    try:
-                        if mode == "request":
-                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
-                        else:
-                            invite = await clone_client.create_chat_invite_link(ch_id)
-                        item["link"] = invite.invite_link
-                        updated = True
-                    except Exception as e:
-                        print(f"⚠️ Failed to create invite link for {ch_id}: {e}")
+                    if mode == "request":
+                        invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
+                    else:
+                        invite = await clone_client.create_chat_invite_link(ch_id)
+                    item["link"] = invite.invite_link
+                    updated = True
 
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
@@ -237,22 +234,17 @@ async def start(client, message):
                         users_counted.append(message.from_user.id)
                         item["users_counted"] = users_counted
                         updated = True
+                    continue
 
                 except UserNotParticipant:
-                    if mode == "request":
-                        if message.from_user.id not in users_counted:
-                            item["joined"] += 1
-                            users_counted.append(message.from_user.id)
-                            item["users_counted"] = users_counted
-                            updated = True
-                    else:
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    pass
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
                 if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
                     new_fsub_data.append(item)
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
