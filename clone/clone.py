@@ -240,7 +240,15 @@ async def start(client, message):
                         ] + ([enums.ChatMemberStatus.RESTRICTED] if mode=="request" else [])
 
                     except UserNotParticipant:
-                        is_member = False
+                        if mode == "request":
+                            if message.from_user.id not in users_counted:
+                                item["joined"] = joined + 1
+                                users_counted.append(message.from_user.id)
+                                item["users_counted"] = users_counted
+                                updated = True
+                            continue
+                        else:
+                            is_member = False
 
                     except Exception as e:
                         print(f"⚠️ Error checking member for {ch_id}: {e}")
