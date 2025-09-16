@@ -219,12 +219,18 @@ async def start(client, message):
                 users_counted = item.get("users_counted", [])
 
                 if not item.get("link"):
-                    if mode == "request":
-                        invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
-                    else:
-                        invite = await clone_client.create_chat_invite_link(ch_id)
-                    item["link"] = invite.invite_link
-                    updated = True
+                    try:
+                        if mode == "request":
+                            invite = await clone_client.create_chat_invite_link(ch_id, creates_join_request=True)
+                        else:
+                            invite = await clone_client.create_chat_invite_link(ch_id)
+                        if invite and invite.invite_link:
+                            item["link"] = invite.invite_link
+                            updated = True
+                        else:
+                            print(f"⚠️ Failed to create invite for channel {ch_id}")
+                    except Exception as e:
+                        print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                 try:
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
@@ -268,6 +274,8 @@ async def start(client, message):
                             item["users_counted"] = users_counted
                             updated = True
                         continue
+                    else:
+                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
