@@ -234,50 +234,28 @@ async def start(client, message):
                     try:
                         member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
-                        if mode == "normal":
-                            if member.status in [
-                                enums.ChatMemberStatus.MEMBER,
-                                enums.ChatMemberStatus.ADMINISTRATOR,
-                                enums.ChatMemberStatus.OWNER
-                            ]:
-                                if message.from_user.id not in users_counted:
-                                    item["joined"] = joined + 1
-                                    users_counted.append(message.from_user.id)
-                                    item["users_counted"] = users_counted
-                                    updated = True
-                                continue
-
-                        elif mode == "request":
-                            if member.status in [
-                                enums.ChatMemberStatus.MEMBER,
-                                enums.ChatMemberStatus.ADMINISTRATOR,
-                                enums.ChatMemberStatus.OWNER,
-                                enums.ChatMemberStatus.RESTRICTED
-                            ]:
-                                if message.from_user.id not in users_counted:
-                                    item["joined"] = joined + 1
-                                    users_counted.append(message.from_user.id)
-                                    item["users_counted"] = users_counted
-                                    updated = True
-                                continue
+                        if message.from_user.id not in users_counted:
+                            item["joined"] = joined + 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        continue
 
                     except UserNotParticipant:
-                        if mode == "request":
-                            if message.from_user.id not in users_counted:
-                                item["joined"] = joined + 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue
+                        if item.get("link"):
+                            if mode == "request":
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                                if message.from_user.id not in users_counted:
+                                    item["joined"] = joined + 1
+                                    users_counted.append(message.from_user.id)
+                                    item["users_counted"] = users_counted
+                                    updated = True
+                                continue
+                            else:
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     except Exception as e:
                         print(f"⚠️ Error checking member for {ch_id}: {e}")
-
-                    if str(message.from_user.id) not in clone.get("premium", []) and not new_fsub_data:
-                        pass
-                    else:
-                        for item in new_fsub_data:
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
                         new_fsub_data.append(item)
