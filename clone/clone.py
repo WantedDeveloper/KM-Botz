@@ -218,9 +218,6 @@ async def start(client, message):
                 joined = item.get("joined", 0)
                 users_counted = item.get("users_counted", [])
 
-                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
-                    continue
-
                 if not item.get("link"):
                     try:
                         if mode == "request":
@@ -252,37 +249,25 @@ async def start(client, message):
                         continue
 
                 except UserNotParticipant:
-                    if mode == "request":
-                        try:
-                            await client.send_chat_request(ch_id)
-                            if message.from_user.id not in users_counted:
-                                item["joined"] = joined + 1
-                                users_counted.append(message.from_user.id)
-                                item["users_counted"] = users_counted
-                                updated = True
-                            continue  # channel treated as done
-                        except ChatAdminRequired:
-                            print(f"⚠️ Bot can't send join request for {ch_id}")
-                            new_fsub_data.append(item)
-                        except Exception as e:
-                            print(f"⚠️ Failed to send join request for {ch_id}: {e}")
-                            new_fsub_data.append(item)
-                    else:
-                        new_fsub_data.append(item)
-                    continue
-
                     if mode == "normal":
-                        new_fsub_data.append(item)
                         buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    elif mode == "request":
+                        if message.from_user.id not in users_counted:
+                            item["joined"] += 1
+                            users_counted.append(message.from_user.id)
+                            item["users_counted"] = users_counted
+                            updated = True
+                        else:
+                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
 
+                if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
+                    new_fsub_data.append(item)
+
             if updated:
                 await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
-
-            if not new_fsub_data:
-                return True
 
             if len(message.command) > 1:
                 start_arg = message.command[1]
