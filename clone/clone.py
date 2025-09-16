@@ -39,7 +39,6 @@ async def is_subscribed(client, user_id: int, bot_id: int):
 
         try:
             member = await client.get_chat_member(channel_id, user_id)
-
             if mode == "normal":
                 if member.status in [
                     enums.ChatMemberStatus.MEMBER,
@@ -55,7 +54,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
                     enums.ChatMemberStatus.MEMBER,
                     enums.ChatMemberStatus.ADMINISTRATOR,
                     enums.ChatMemberStatus.OWNER,
-                    enums.ChatMemberStatus.RESTRICTED  # pending requests show here
+                    enums.ChatMemberStatus.RESTRICTED
                 ]:
                     continue
                 else:
@@ -233,7 +232,7 @@ async def start(client, message):
                             enums.ChatMemberStatus.MEMBER,
                             enums.ChatMemberStatus.ADMINISTRATOR,
                             enums.ChatMemberStatus.OWNER,
-                            enums.ChatMemberStatus.RESTRICTED  # pending join request
+                            enums.ChatMemberStatus.RESTRICTED
                         ]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = item.get("joined", 0) + 1
@@ -244,8 +243,6 @@ async def start(client, message):
                         else:
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except UserNotParticipant:
-                    if mode == "request":
-                        continue
                     buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
                 except Exception as e:
                     print(f"⚠️ Error checking member for {ch_id}: {e}")
