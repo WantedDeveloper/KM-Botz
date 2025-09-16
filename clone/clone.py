@@ -228,16 +228,38 @@ async def start(client, message):
                             item["link"] = invite.invite_link
                             updated = True
                         except Exception as e:
+                            item["link"] = None
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                     try:
                         member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
-                        is_member = member.status in [
-                            enums.ChatMemberStatus.MEMBER,
-                            enums.ChatMemberStatus.ADMINISTRATOR,
-                            enums.ChatMemberStatus.OWNER,
-                        ] + ([enums.ChatMemberStatus.RESTRICTED] if mode=="request" else [])
+                        if mode == "normal":
+                            if member.status in [
+                                enums.ChatMemberStatus.MEMBER,
+                                enums.ChatMemberStatus.ADMINISTRATOR,
+                                enums.ChatMemberStatus.OWNER
+                            ]:
+                                if message.from_user.id not in users_counted:
+                                    item["joined"] = joined + 1
+                                    users_counted.append(message.from_user.id)
+                                    item["users_counted"] = users_counted
+                                    updated = True
+                                continue
+
+                        elif mode == "request":
+                            if member.status in [
+                                enums.ChatMemberStatus.MEMBER,
+                                enums.ChatMemberStatus.ADMINISTRATOR,
+                                enums.ChatMemberStatus.OWNER,
+                                enums.ChatMemberStatus.RESTRICTED
+                            ]:
+                                if message.from_user.id not in users_counted:
+                                    item["joined"] = joined + 1
+                                    users_counted.append(message.from_user.id)
+                                    item["users_counted"] = users_counted
+                                    updated = True
+                                continue
 
                     except UserNotParticipant:
                         if mode == "request":
@@ -247,27 +269,22 @@ async def start(client, message):
                                 item["users_counted"] = users_counted
                                 updated = True
                             continue
-                        else:
-                            is_member = False
 
                     except Exception as e:
                         print(f"⚠️ Error checking member for {ch_id}: {e}")
-                        is_member = False
-
-                    if is_member and message.from_user.id not in users_counted:
-                        item["joined"] = joined + 1
-                        users_counted.append(message.from_user.id)
-                        item["users_counted"] = users_counted
-                        updated = True
-
-                    if not is_member and item.get("link"):
-                        buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     if item.get("limit", 0) == 0 or item.get("joined", 0) < item.get("limit", 0):
                         new_fsub_data.append(item)
 
                 if updated:
                     await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
+
+                if str(message.from_user.id) not in clone.get("premium", []) and not new_fsub_data:
+                    pass
+                else:
+                    for item in new_fsub_data:
+                    buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                    
 
                 if buttons:
                     if len(message.command) > 1:
