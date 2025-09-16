@@ -236,7 +236,7 @@ async def start(client, message):
                     member = await clone_client.get_chat_member(ch_id, message.from_user.id)
 
                     if mode == "normal":
-                        if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                        if member.status not in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
                             if message.from_user.id not in users_counted:
                                 item["joined"] = joined + 1
                                 users_counted.append(message.from_user.id)
