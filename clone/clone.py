@@ -81,7 +81,7 @@ async def is_subscribed(client, user_id: int, bot_id: int):
             return False
 
         except Exception as e:
-            print(f"⚠️ is_subscribed error {channel_id}: {e}")
+            print(f"⚠️ Clone is_subscribed Error {channel_id}: {e}")
             return False
 
     return True
@@ -120,7 +120,7 @@ async def get_verify_shorted_link(client, link):
                     print(f"⚠️ Unexpected JSON response: {data}")
                     return link
         except Exception as e:
-            print(f"⚠️ Shortener error: {e}")
+            print(f"⚠️ Clone Shortener error: {e}")
             return link
 
     return link
@@ -176,20 +176,20 @@ async def auto_delete_message(client, msg_to_delete, notice_msg, hours):
         try:
             await msg_to_delete.delete()
         except Exception as e:
-            print(f"⚠️ Could not delete message: {e}")
+            print(f"⚠️ Clone Could not delete message: {e}")
 
         if notice_msg:
             try:
                 await notice_msg.edit_text("✅ Your File/Video is successfully deleted!")
             except Exception as e:
-                print(f"⚠️ Could not edit notice_msg: {e}")
+                print(f"⚠️ Clone Could not edit notice_msg: {e}")
                 try:
                     await client.send_message(
                         notice_msg.chat.id,
                         "✅ Your File/Video is successfully deleted!"
                     )
                 except Exception as e2:
-                    print(f"⚠️ Could not send fallback message: {e2}")
+                    print(f"⚠️ Clone Could not send fallback message: {e2}")
 
     except Exception as e:
         await client.send_message(
@@ -246,7 +246,7 @@ async def start(client, message):
                             item["link"] = invite.invite_link
                             updated = True
                         except Exception as e:
-                            print(f"⚠️ Error creating invite for {ch_id}: {e}")
+                            print(f"⚠️ Clone Error creating invite for {ch_id}: {e}")
 
                     if mode == "request":
                         if message.from_user.id not in users_counted:
@@ -283,7 +283,7 @@ async def start(client, message):
                             buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                     except Exception as e:
-                        print(f"⚠️ Error checking member for {ch_id}: {e}")
+                        print(f"⚠️ Clone Error checking member for {ch_id}: {e}")
 
                 if updated:
                     await db.update_clone(me.id, {"force_subscribe": new_fsub_data})
@@ -495,8 +495,10 @@ async def start(client, message):
                     media = getattr(msg, msg.media.value)
                     file_id = media.file_id
                     file = await client.download_media(file_id)
-                    with open(file) as file_data:
-                        msgs = json.loads(file_data.read())
+
+                    with open(file, "r", encoding="utf-8") as file_data:
+                        msgs = json.load(file_data)
+
                     os.remove(file)
                     BATCH_FILES[file_id] = msgs
 
@@ -507,67 +509,85 @@ async def start(client, message):
                 for index, msg in enumerate(msgs, start=1):
                     try:
                         await sts.edit_text(f"📤 Sending file {index}/{total_files}...")
-                    except:
-                        pass
 
-                    channel_id = int(msg.get("channel_id"))
-                    msgid = msg.get("msg_id")
-                    info = await client.get_messages(channel_id, int(msgid))
-                    f_caption = None
-                    sent_msg = None
-                    if info.media:
-                        file = getattr(info, info.media.value)
-                        file_name = getattr(file, "file_name", None) or "Media"
-                        file_size = getattr(file, "file_size", None)
+                        channel_id = int(msg.get("channel_id"))
+                        msgid = msg.get("msg_id")
+                        info = await client.get_messages(channel_id, int(msgid))
+                        f_caption = None
+                        sent_msg = None
+                        if info.media:
+                            file = getattr(info, info.media.value)
+                            file_name = getattr(file, "file_name", None) or "Media"
+                            file_size = getattr(file, "file_size", None)
 
-                        if file_size and isinstance(file_size, int):
-                            await db.add_storage_used(me.id, file_size)
+                            if file_size and isinstance(file_size, int):
+                                await db.add_storage_used(me.id, file_size)
 
-                        original_caption = info.caption or ""
-                        if clone.get("caption", None):
-                            try:
-                                f_caption = clone.get("caption", None).format(
-                                    file_name=file_name,
-                                    file_size=get_size(file_size) if file_size else "N/A",
-                                    caption=original_caption
-                                )
-                            except:
-                                f_caption = original_caption or f"<code>{file_name}</code>"
-                        else:
-                            f_caption = original_caption or f"<code>{file_name}</code>"
-
-                        if not f_caption or not f_caption.strip():
-                            f_caption = "None"
-
-                        sent_msg = await info.copy(chat_id=message.from_user.id, caption=f_caption, protect_content=clone.get("forward_protect", False))
-
-                        buttons_data = clone.get("button", [])
-                        buttons = []
-                        for btn in buttons_data:
-                            buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
-
-                        if buttons:
-                            current_caption = sent_msg.caption or ""
-                            if (f_caption and f_caption != current_caption) or not sent_msg.reply_markup:
+                            original_caption = info.caption or ""
+                            if clone.get("caption", None):
                                 try:
-                                    await sent_msg.edit_caption(
-                                        f_caption or current_caption,
-                                        reply_markup=InlineKeyboardMarkup(buttons)
+                                    f_caption = clone.get("caption", None).format(
+                                        file_name=file_name,
+                                        file_size=get_size(file_size) if file_size else "N/A",
+                                        caption=original_caption
                                     )
+                                except:
+                                    f_caption = original_caption or f"<code>{file_name}</code>"
+                            else:
+                                f_caption = original_caption or f"<code>{file_name}</code>"
+
+                            if not f_caption or not f_caption.strip():
+                                f_caption = "None"
+
+                            while True:
+                                try:
+                                    sent_msg = await info.copy(
+                                        chat_id=message.from_user.id,
+                                        caption=f_caption,
+                                        protect_content=clone.get("forward_protect", False)
+                                    )
+                                    break
+                                except FloodWait as e:
+                                    await asyncio.sleep(e.x)
                                 except Exception as e:
                                     if "MESSAGE_NOT_MODIFIED" not in str(e):
                                         raise
-                        elif f_caption and f_caption != (sent_msg.caption or ""):
-                            try:
-                                await sent_msg.edit_caption(f_caption)
-                            except Exception as e:
-                                if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                    raise
-                    else:
-                        sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
+                                    break
 
-                    sent_files.append(sent_msg)
-                    await asyncio.sleep(1)
+                            buttons_data = clone.get("button", [])
+                            buttons = []
+                            for btn in buttons_data:
+                                buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
+
+                            if buttons:
+                                current_caption = sent_msg.caption or ""
+                                if (f_caption and f_caption != current_caption) or not sent_msg.reply_markup:
+                                    try:
+                                        await sent_msg.edit_caption(
+                                            f_caption or current_caption,
+                                            reply_markup=InlineKeyboardMarkup(buttons)
+                                        )
+                                    except Exception as e:
+                                        if "MESSAGE_NOT_MODIFIED" not in str(e):
+                                            raise
+                            elif f_caption and f_caption != (sent_msg.caption or ""):
+                                try:
+                                    await sent_msg.edit_caption(f_caption)
+                                except Exception as e:
+                                    if "MESSAGE_NOT_MODIFIED" not in str(e):
+                                        raise
+                        else:
+                            sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
+
+                        sent_files.append(sent_msg)
+                        await asyncio.sleep(3)
+                    except FloodWait as e:
+                        print(f"⚠️ Clone Batch File Handler Flood wait {e.x} seconds, sleeping...")
+                        await asyncio.sleep(e.x)
+                        continue
+                    except Exception as e:
+                        print(f"⚠️ Clone Batch File Handler Error sending message: {e}")
+                        continue
 
                 if clone.get("auto_delete", False):
                     auto_delete_time = clone.get("auto_delete_time", 1)
