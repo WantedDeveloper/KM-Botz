@@ -1463,7 +1463,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
             if owner_id:
                 await client.send_message(
-                    mod_id,
+                    owner_id,
                     f"📩 *New Payment Confirmation*\n\n"
                     f"👤 User: {mention} (`{user_id}`)\n"
                     f"🗓 Plan: {days} days\n\n"
