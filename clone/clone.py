@@ -235,7 +235,6 @@ async def start(client, message):
                     mode = item.get("mode", "normal")
                     joined = item.get("joined", 0)
                     users_counted = item.get("users_counted", [])
-                    limit = item.get("limit", 0)
 
                     if not item.get("link"):
                         try:
@@ -496,7 +495,7 @@ async def start(client, message):
                     file_id = media.file_id
                     file = await client.download_media(file_id)
 
-                    with open(file, "r", encoding="utf-8") as file_data:
+                    with open(file, "r") as file_data:
                         msgs = json.load(file_data)
 
                     os.remove(file)
@@ -580,7 +579,7 @@ async def start(client, message):
                             sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
 
                         sent_files.append(sent_msg)
-                        await asyncio.sleep(3)
+                        await asyncio.sleep(1.5)
                     except FloodWait as e:
                         print(f"⚠️ Clone Batch File Handler Flood wait {e.x} seconds, sleeping...")
                         await asyncio.sleep(e.x)
@@ -1023,7 +1022,7 @@ async def batch(client, message):
             og_msg += 1
             outlist.append(file)
 
-        with open(f"batchmode_{message.from_user.id}.json", "w+", encoding="utf-8") as out:
+        with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
             json.dump(outlist, out, indent=2)
 
         post = await client.send_document(
