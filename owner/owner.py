@@ -237,13 +237,20 @@ async def list_premium(client: Client, message: Message):
             user_id = u["id"]
             plan = u.get("plan_type", "normal").title()
             expiry = u.get("expiry_time")
+
+            try:
+                user = await client.get_users(user_id)
+                username = f"@{user.username}" if user.username else "—"
+            except Exception:
+                username = "—"
+
             if expiry:
                 exp_str = expiry.strftime("%Y-%m-%d %H:%M")
                 remaining = expiry - datetime.utcnow()
                 days_left = remaining.days
-                text += f"• `{user_id}` | {plan} | Expires: {exp_str} ({days_left} days left)\n"
+                text += f"• `{user_id}` | {username} | {plan} | Expires: {exp_str} ({days_left} days left)\n"
             else:
-                text += f"• `{user_id}` | {plan} | ❌ Expired\n"
+                text += f"• `{user_id}` | {username} | {plan} | ❌ Expired\n"
 
         if len(text) > 4000:
             await message.reply_document(
@@ -2055,12 +2062,16 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                PREMIUM_UPI[user_id] = (query.message, bot_id)
-                buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_pu_{bot_id}')]]
-                await query.message.edit_text(
-                    text="🔗 Please provide the updated **Upi I'd**:",
-                    reply_markup=InlineKeyboardMarkup(buttons)
-                )
+                premium_upi = clone.get("premium_upi", None)
+                if premium_upi:
+                    await show_premium_menu(client, query.message, bot_id)
+                else:
+                    PREMIUM_UPI[user_id] = (query.message, bot_id)
+                    buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_pu_{bot_id}')]]
+                    await query.message.edit_text(
+                        text="🔗 Please provide the updated **Upi I'd**:",
+                        reply_markup=InlineKeyboardMarkup(buttons)
+                    )
 
             # Cancel Premium User
             elif action == "cancel_pu":
