@@ -1325,7 +1325,7 @@ async def contact(client, message):
         header = (
             f"📩 **New Contact Message**\n\n"
             f"👤 User: [{message.from_user.first_name}](tg://user?id={message.from_user.id})\n"
-            f"🆔 ID: `{message.from_user.id}`\n\n"
+            f"🆔 ID: `{message.from_user.id}`"
         )
 
         if c_msg.photo or c_msg.video or c_msg.document or c_msg.animation or c_msg.audio or c_msg.voice:
@@ -1336,7 +1336,6 @@ async def contact(client, message):
             for mod_id in moderators:
                 await c_msg.copy(mod_id, caption=caption)
 
-        # Else, it's just text
         elif c_msg.text:
             text = f"{header}\n\n💬 Message:\n{c_msg.text}"
 
