@@ -1504,7 +1504,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             )
 
             await query.message.edit_text(
-                f"✅ Approved Premium Plan for user {mention} (`{user_id}`) ({days} days).",
+                f"✅ Approved Premium Plan for user {query.from_user.mention} (`{user_id}`) ({days} days).",
             )
 
         # Admin rejects
@@ -1522,7 +1522,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             )
 
             await query.message.edit_text(
-                f"❌ Rejected Premium Plan for user {mention} (`{user_id}`) ({days} days).",
+                f"❌ Rejected Premium Plan for user {query.from_user.mention} (`{user_id}`) ({days} days).",
             )
 
         # Start Menu
