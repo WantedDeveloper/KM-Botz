@@ -986,6 +986,7 @@ async def batch(client, message):
                         message_id=msg.id
                     )
                     sent = True
+                    await asyncio.sleep(0.5)
                 except FloodWait as e:
                     wait_time = e.value
                     print(f"⏳ Flood wait: {wait_time} seconds... Resuming after wait.")
@@ -1001,8 +1002,6 @@ async def batch(client, message):
             }
             og_msg += 1
             outlist.append(file)
-
-            await asyncio.sleep(0.5)
 
         with open(f"batchmode_{message.from_user.id}.json", "w+", encoding="utf-8") as out:
             json.dump(outlist, out, indent=2)
