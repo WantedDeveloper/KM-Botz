@@ -1322,27 +1322,17 @@ async def contact(client, message):
             if c_msg.text and c_msg.text.lower() == "/cancel":
                 return await message.reply("🚫 Contact cancelled.")
 
-        header = (
+        text = (
             f"📩 **New Contact Message**\n\n"
             f"👤 User: [{message.from_user.first_name}](tg://user?id={message.from_user.id})\n"
-            f"🆔 ID: `{message.from_user.id}`"
+            f"🆔 ID: `{message.from_user.id}`\n\n"
+            f"💬 Message:\n{c_msg.text}"
         )
 
-        if c_msg.photo or c_msg.video or c_msg.document or c_msg.animation or c_msg.audio or c_msg.voice:
-            caption = f"{header}\n\n💬 Caption:\n{c_msg.caption or 'No caption'}"
-
-            if owner_id:
-                await c_msg.copy(owner_id, caption=caption)
-            for mod_id in moderators:
-                await c_msg.copy(mod_id, caption=caption)
-
-        elif c_msg.text:
-            text = f"{header}\n\n💬 Message:\n{c_msg.text}"
-
-            if owner_id:
-                await client.send_message(owner_id, text)
-            for mod_id in moderators:
-                await client.send_message(mod_id, text)
+        if owner_id:
+            await client.send_message(owner_id, text)
+        for mod_id in moderators:
+            await client.send_message(mod_id, text)
 
         await message.reply_text("✅ Your message has been sent to the admin!")
     except Exception as e:
@@ -1457,6 +1447,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 return
             days = int(parts[-1])
             user_id = query.from_user.id
+            username = query.from_user.username
 
             await query.message.edit_text(
                 f"⏳ Payment received for **Premium Plan** ({days} days).\nWaiting for admin approval...",
@@ -1476,6 +1467,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     text=(
                         f"📩 *New Payment Confirmation*\n\n"
                         f"👤 User: `{user_id}`\n"
+                        f"👤 Username: `@{username}`\n"
                         f"🗓 Plan: {days} days\n\n"
                         f"Do you want to approve or reject?"
                     ),
