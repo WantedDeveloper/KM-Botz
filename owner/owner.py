@@ -2649,13 +2649,13 @@ async def cb_handler(client: Client, query: CallbackQuery):
         # Payment Flow
         elif data in ["buy_normal", "buy_ultra", "buy_vip"]:
             if data == "buy_normal":
-                price = "₹200"
+                price = "₹99"
                 feature_type = "Normal Premium"
             elif data == "buy_ultra":
-                price = "₹500"
+                price = "₹249"
                 feature_type = "Ultra Premium"
             else:
-                price = "₹1200"
+                price = "₹599"
                 feature_type = "VIP Premium"
 
 
