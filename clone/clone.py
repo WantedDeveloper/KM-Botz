@@ -1467,7 +1467,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     f"📩 *New Payment Confirmation*\n\n"
                     f"👤 User: {mention} (`{user_id}`)\n"
                     f"🗓 Plan: {days} days\n\n"
-                    f"Do you want to approve or reject?"
+                    f"Do you want to approve or reject?",
                     reply_markup=InlineKeyboardMarkup(approval_buttons)
                 )
 
@@ -1477,7 +1477,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     f"📩 *New Payment Confirmation*\n\n"
                     f"👤 User: {mention} (`{user_id}`)\n"
                     f"🗓 Plan: {days} days\n\n"
-                    f"Do you want to approve or reject?"
+                    f"Do you want to approve or reject?",
                     reply_markup=InlineKeyboardMarkup(approval_buttons)
                 )
 
