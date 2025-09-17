@@ -977,7 +977,7 @@ async def batch(client, message):
                 await asyncio.sleep(0.1)
                 continue
 
-            sent = False
+            """sent = False
             while not sent:
                 try:
                     await client.copy_message(
@@ -994,7 +994,7 @@ async def batch(client, message):
                         await sts.edit(f"⚠️ FloodWait: Sleeping {wait_time}s before resuming...")
                     except:
                         pass
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(wait_time)"""
 
             file = {
                 "channel_id": f_chat_id,
