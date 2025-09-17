@@ -249,8 +249,9 @@ async def start(client, message):
                             print(f"⚠️ Error creating invite for {ch_id}: {e}")
 
                     if mode == "request":
-                        if item.get("link"):
-                            buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
+                        if message.from_user.id not in users_counted:
+                            if item.get("link"):
+                                buttons.append([InlineKeyboardButton("🔔 Join Channel", url=item["link"])])
 
                         if message.from_user.id not in users_counted:
                             item["joined"] = joined + 1
@@ -272,8 +273,10 @@ async def start(client, message):
                             item["users_counted"] = users_counted
                             updated = True
 
-                        if limit == 0 or item["joined"] < limit:
-                            new_fsub_data.append(item)
+                        if item.get("limit", 0) != 0 and item["joined"] >= item["limit"]:
+                            continue
+
+                        new_fsub_data.append(item)
                         continue
                     except UserNotParticipant:
                         if item.get("link"):
@@ -1001,17 +1004,11 @@ async def batch(client, message):
 
             await asyncio.sleep(0.5)
 
-        filename = f"batchmode_{message.from_user.id}.json"
-        with open(filename, "w+", encoding="utf-8") as out:
-            json.dump(outlist, out, indent=2)
+        with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
+            json.dump(outlist, out)
 
-        post = await client.send_document(
-            MESSAGE_CHANNEL,
-            filename,
-            file_name="Batch.json",
-            caption="⚠️ Batch Generated For Filestore."
-        )
-        os.remove(filename)
+        post = await bot.send_document(MESSAGE_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Batch Generated For Filestore.")
+        os.remove(f"batchmode_{message.from_user.id}.json")
 
         string = str(post.id)
         file_id = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
