@@ -1463,28 +1463,22 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
             if owner_id:
                 await client.send_message(
-                    chat_id=owner_id,
-                    text=(
-                        f"📩 *New Payment Confirmation*\n\n"
-                        f"👤 User: {mention} (`{user_id}`)\n"
-                        f"🗓 Plan: {days} days\n\n"
-                        f"Do you want to approve or reject?"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(approval_buttons),
-                    parse_mode=enums.ParseMode.MARKDOWN
+                    mod_id,
+                    f"📩 *New Payment Confirmation*\n\n"
+                    f"👤 User: {mention} (`{user_id}`)\n"
+                    f"🗓 Plan: {days} days\n\n"
+                    f"Do you want to approve or reject?"
+                    reply_markup=InlineKeyboardMarkup(approval_buttons)
                 )
 
             for mod_id in moderators:
                 await client.send_message(
-                    chat_id=mod_id,
-                    text=(
-                        f"📩 *New Payment Confirmation*\n\n"
-                        f"👤 User: {mention} (`{user_id}`)\n"
-                        f"🗓 Plan: {days} days\n\n"
-                        f"Do you want to approve or reject?"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(approval_buttons),
-                    parse_mode=enums.ParseMode.MARKDOWN
+                    mod_id,
+                    f"📩 *New Payment Confirmation*\n\n"
+                    f"👤 User: {mention} (`{user_id}`)\n"
+                    f"🗓 Plan: {days} days\n\n"
+                    f"Do you want to approve or reject?"
+                    reply_markup=InlineKeyboardMarkup(approval_buttons)
                 )
 
         # Admin approves
@@ -1505,13 +1499,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
             await db.update_clone(me.id, {"premium_user": premium_users})
 
             await client.send_message(
-                chat_id=user_id,
-                text=f"✅ Your Premium Plan ({days} days) has been approved!\nEnjoy ad-free experience 🎉"
+                user_id,
+                f"✅ Your Premium Plan ({days} days) has been approved!\nEnjoy ad-free experience 🎉"
             )
 
             await query.message.edit_text(
                 f"✅ Approved Premium Plan for user {mention} (`{user_id}`) ({days} days).",
-                parse_mode=enums.ParseMode.MARKDOWN
             )
 
         # Admin rejects
@@ -1524,14 +1517,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 return
 
             await client.send_message(
-                chat_id=user_id,
-                text=f"❌ Your Premium Plan ({days} days) payment was *rejected*.\nContact support for help.",
-                parse_mode=enums.ParseMode.MARKDOWN
+                user_id,
+                f"❌ Your Premium Plan ({days} days) payment was *rejected*.\nContact support for help.",
             )
 
             await query.message.edit_text(
                 f"❌ Rejected Premium Plan for user {mention} (`{user_id}`) ({days} days).",
-                parse_mode=enums.ParseMode.MARKDOWN
             )
 
         # Start Menu
