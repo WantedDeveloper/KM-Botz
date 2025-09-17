@@ -470,23 +470,12 @@ async def contact(client, message):
             if c_msg.text and c_msg.text.lower() == "/cancel":
                 return await message.reply("🚫 Contact cancelled.")
 
-        header = (
+        text = (
             f"📩 **New Contact Message**\n\n"
             f"👤 User: [{message.from_user.first_name}](tg://user?id={message.from_user.id})\n"
-            f"🆔 ID: `{message.from_user.id}`"
+            f"🆔 ID: `{message.from_user.id}`\n\n"
+            f"💬 Message:\n{c_msg.text}"
         )
-
-        if c_msg.photo or c_msg.video or c_msg.document or c_msg.animation or c_msg.audio or c_msg.voice:
-            caption = f"{header}\n\n💬 Caption:\n{c_msg.caption or 'No caption'}"
-
-            for admin_id in ADMINS:
-                await c_msg.copy(admin_id, caption=caption)
-
-        elif c_msg.text:
-            text = f"{header}\n\n💬 Message:\n{c_msg.text}"
-
-            for admin_id in ADMINS:
-                await client.send_message(admin_id, text)
 
         for admin_id in ADMINS:
             await client.send_message(admin_id, text)
