@@ -466,7 +466,7 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
-                if clone.get("access_token", False) and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
+                if clone.get("access_token", False) and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
 
@@ -593,7 +593,7 @@ async def start(client, message):
             decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii")
             pre, file_id = decoded.split("_", 1)
 
-            if clone.get("access_token", False) and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
+            if clone.get("access_token", False) and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
                 verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                 btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
 
@@ -1010,7 +1010,7 @@ async def batch(client, message):
         post = await client.send_document(MESSAGE_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Batch Generated For Filestore.")
         os.remove(f"batchmode_{message.from_user.id}.json")
 
-        string = str(post.id)
+        string = f"{MESSAGE_CHANNEL}:{post.id}"
         file_id = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
         share_link = f"https://t.me/{me.username}?start=BATCH-{file_id}"
 
