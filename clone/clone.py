@@ -1004,13 +1004,18 @@ async def batch(client, message):
 
             await asyncio.sleep(0.5)
 
-        with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
-            json.dump(outlist, out)
+        with open(f"batchmode_{message.from_user.id}.json", "w+", encoding="utf-8") as out:
+            json.dump(outlist, out, indent=2)
 
-        post = await client.send_document(MESSAGE_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Batch Generated For Filestore.")
+        post = await client.send_document(
+            MESSAGE_CHANNEL,
+            f"batchmode_{message.from_user.id}.json",
+            file_name="Batch.json",
+            caption="⚠️ Batch Generated For Filestore."
+        )
         os.remove(f"batchmode_{message.from_user.id}.json")
 
-        string = f"{MESSAGE_CHANNEL}:{post.id}"
+        string = str(post.id)
         file_id = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
         share_link = f"https://t.me/{me.username}?start=BATCH-{file_id}"
 
