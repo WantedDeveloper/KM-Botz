@@ -1447,7 +1447,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 return
             days = int(parts[-1])
             user_id = query.from_user.id
-            username = query.from_user.username
+            mention = query.from_user.mention
 
             await query.message.edit_text(
                 f"⏳ Payment received for **Premium Plan** ({days} days).\nWaiting for admin approval...",
@@ -1466,8 +1466,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     chat_id=owner_id,
                     text=(
                         f"📩 *New Payment Confirmation*\n\n"
-                        f"👤 User: `{user_id}`\n"
-                        f"👤 Username: `@{username}`\n"
+                        f"👤 User: {mention} (`{user_id}`)\n"
                         f"🗓 Plan: {days} days\n\n"
                         f"Do you want to approve or reject?"
                     ),
@@ -1480,7 +1479,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     chat_id=mod_id,
                     text=(
                         f"📩 *New Payment Confirmation*\n\n"
-                        f"👤 User: `{user_id}`\n"
+                        f"👤 User: {mention} (`{user_id}`)\n"
                         f"🗓 Plan: {days} days\n\n"
                         f"Do you want to approve or reject?"
                     ),
