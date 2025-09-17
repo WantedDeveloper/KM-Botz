@@ -1007,7 +1007,7 @@ async def batch(client, message):
         with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
             json.dump(outlist, out)
 
-        post = await bot.send_document(MESSAGE_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Batch Generated For Filestore.")
+        post = await client.send_document(MESSAGE_CHANNEL, f"batchmode_{message.from_user.id}.json", file_name="Batch.json", caption="⚠️ Batch Generated For Filestore.")
         os.remove(f"batchmode_{message.from_user.id}.json")
 
         string = str(post.id)
@@ -1801,7 +1801,7 @@ async def message_capture(client: Client, message: Message):
                         )
                         print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
 
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.5)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
