@@ -9,8 +9,8 @@ from plugins.config import *
 from plugins.database import db, JoinReqs
 from plugins.clone_instance import set_client, get_client
 from plugins.script import script
-from clone.autopost import auto_post_clone
-
+from clone.clone import auto_post_clone
+        
 logger = logging.getLogger(__name__)
 
 CLONE_TOKEN = {}
