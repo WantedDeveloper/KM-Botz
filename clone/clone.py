@@ -492,7 +492,7 @@ async def start(client, message):
                 msgs = BATCH_FILES.get(file_id)
 
                 if not msgs:
-                    decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii", errors="ignore")
+                    decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
                     msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
                     media = getattr(msg, msg.media.value)
                     file_id = media.file_id
