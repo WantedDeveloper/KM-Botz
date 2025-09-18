@@ -835,11 +835,21 @@ async def show_post_menu(client, message, bot_id):
     try:
         clone = await db.get_clone_by_id(bot_id)
         current = clone.get("auto_post", False)
+        sleep = clone.get("auto_post_sleep", 1)
+
         if current:
-            buttons = [[InlineKeyboardButton("❌ Disable", callback_data=f"ap_status_{bot_id}")]]
-            status = "🟢 Enabled"
+            buttons = [
+                [InlineKeyboardButton("⏱ Sleep", callback_data=f"ap_sleep_{bot_id}"),
+                InlineKeyboardButton("❌ Disable", callback_data=f"ap_status_{bot_id}")]
+            ]
+
+            status = (
+                f"🟢 Enabled\n\n"
+                f"⏱ Sleep: {sleep} hour\n\n"
+            )
         else:
-            buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ap_status_{bot_id}")]]
+            buttons = []
+            buttons.append([InlineKeyboardButton("✅ Enable", callback_data=f"at_status_{bot_id}")])
             status = "🔴 Disabled"
 
         buttons.append([InlineKeyboardButton("⬅️ Back", callback_data=f"manage_{bot_id}")])
@@ -853,6 +863,25 @@ async def show_post_menu(client, message, bot_id):
             f"⚠️ Show Post Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
         )
         print(f"⚠️ Show Post Menu Error: {e}")
+
+async def show_sleep_menu(client, message, bot_id):
+    try:
+        buttons = [
+            [InlineKeyboardButton('✏️ Edit', callback_data=f'edit_apsleep_{bot_id}'),
+            InlineKeyboardButton('👁️ See', callback_data=f'see_apsleep_{bot_id}'),
+            InlineKeyboardButton('🔄 Default', callback_data=f'default_apsleep_{bot_id}')],
+            [InlineKeyboardButton('⬅️ Back', callback_data=f'auto_post_{bot_id}')]
+        ]
+        await message.edit_text(
+            text=script.AP_SLEEP_TXT,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+    except Exception as e:
+        await client.send_message(
+            LOG_CHANNEL,
+            f"⚠️ Show Sleep Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
+        )
+        print(f"⚠️ Show Sleep Menu Error: {e}")
 
 async def show_premium_menu(client, message, bot_id):
     try:
@@ -1077,7 +1106,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             "link_message_", "word_filter_", "wf_status_", "media_filter_", "mf_status_", "random_caption_", "rc_status_", "header_", "add_header_", "cancel_addheader_", "see_header_", "delete_header_", "footer_", "add_footer_", "cancel_addfooter_", "see_footer_", "delete_footer_",
             "force_subscribe_", "add_fsub_", "fsub_mode_", "cancel_addfsub_", "remove_fsub_",
             "access_token_", "at_status_", "cancel_at_", "at_validty_", "edit_atvalidity_", "cancel_editatvalidity_", "see_atvalidity_", "default_atvalidity_", "at_tutorial_", "add_attutorial_", "cancel_addattutorial_", "see_attutorial_", "delete_attutorial_",
-            "auto_post_", "ap_status_", "cancel_autopost_",
+            "auto_post_", "ap_status_", "cancel_autopost_", "ap_sleep_", "edit_apsleep_", "cancel_editapsleep_", "see_apsleep_", "default_apsleep_",
             "premium_user_", "cancel_pu_", "add_pu_", "cancel_addpu_", "remove_premium_user_", "remove_pu_",
             "auto_delete_", "ad_status_", "ad_time_", "edit_adtime_", "cancel_editadtime_", "see_adtime_", "default_adtime_", "ad_message_", "edit_admessage_", "cancel_editadmessage_", "see_admessage_", "default_admessage_",
             "forward_protect_", "fp_status_",
@@ -2054,6 +2083,65 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 await db.update_clone(bot_id, {"auto_post": False})
                 await show_post_menu(client, query.message, bot_id)
 
+            # Auto Post Sleep Menu
+            elif action == "ap_sleep":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                await show_sleep_menu(client, query.message, bot_id)
+
+            # Edit Auto Post Sleep
+            elif action == "edit_apsleep":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                AUTO_POST_SLEEP[user_id] = (query.message, bot_id)
+                buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editapsleep_{bot_id}')]]
+                await query.message.edit_text(
+                    text="⏱ Please provide the new **Auto Post Sleep** in **hours** (e.g., `24` for 1 day):",
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+
+            # Cancel Auto Post Sleep
+            elif action == "cancel_editapsleep":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                AUTO_POST_SLEEP.pop(user_id, None)
+                await show_sleep_menu(client, query.message, bot_id)
+
+            # See Auto Post Sleep
+            elif action == "see_apsleep":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                ad_time = clone.get("auto_post_sleep", 1)
+                unit = "hour" if ap_sleep == 1 else "hours"
+                await query.answer(f"📝 Current Auto Post Sleep:\n\n{ap_sleep} {unit}", show_alert=True)
+
+            # Default Auto Post Sleep
+            elif action == "default_apsleep":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                await db.update_clone(bot_id, {"auto_post_sleep": 1})
+                await query.answer(f"🔄 Auto post sleep reset to default.", show_alert=True)
+
             # Premium User
             elif action == "premium_user":
                 if not clone:
@@ -2235,7 +2323,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_DELETE_TIME[user_id] = (query.message, bot_id)
                 buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editadtime_{bot_id}')]]
                 await query.message.edit_text(
-                    text="⏱ Please provide the new **auto-delete time** in **hours** (e.g., `24` for 1 day):",
+                    text="⏱ Please provide the new **Auto Delete Time** in **hours** (e.g., `24` for 1 day):",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
 
@@ -2294,7 +2382,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_DELETE_MESSAGE[user_id] = (query.message, bot_id)
                 buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editadmessage_{bot_id}')]]
                 await query.message.edit_text(
-                    text="📄 Please provide the new **auto-delete message**:",
+                    text="📄 Please provide the new **Auto Delete Message**:",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
 
@@ -2871,6 +2959,7 @@ async def message_capture(client: Client, message: Message):
                 or user_id in ACCESS_TOKEN_VALIDITY
                 or user_id in ACCESS_TOKEN_TUTORIAL
                 or user_id in AUTO_POST
+                or user_id in AUTO_POST_SLEEP
                 or user_id in PREMIUM_UPI
                 or user_id in ADD_PREMIUM
                 or user_id in AUTO_DELETE_TIME
@@ -2982,6 +3071,7 @@ async def message_capture(client: Client, message: Message):
                 ("FOOTER_TEXT", FOOTER_TEXT, "text", "footer", "show_footer_menu"),
                 ("ACCESS_TOKEN_VALIDITY", ACCESS_TOKEN_VALIDITY, "text", "access_token_validity", "show_validity_menu"),
                 ("ACCESS_TOKEN_TUTORIAL", ACCESS_TOKEN_TUTORIAL, "text", "access_token_tutorial", "show_tutorial_menu"),
+                ("AUTO_POST_SLEEP", AUTO_POST_SLEEP, "text", "auto_post_sleep", "show_sleep_menu"),
                 ("PREMIUM_UPI", PREMIUM_UPI, "text", "premium_upi", "show_premium_menu"),
                 ("ADD_PREMIUM", ADD_PREMIUM, "text", "premium_user", "show_premium_menu"),
                 ("AUTO_DELETE_TIME", AUTO_DELETE_TIME, "text", "auto_delete_time", "show_time_menu"),
@@ -3043,7 +3133,7 @@ async def message_capture(client: Client, message: Message):
                             moderators = clone.get("moderators", [])
                             moderators.append(content)
                             await db.update_clone(bot_id, {db_field: moderators})
-                        elif db_field in ["auto_delete_time", "access_token_validity"]:
+                        elif db_field in ["access_token_validity", "auto_post_sleep", "auto_delete_time"]:
                             await db.update_clone(bot_id, {db_field: int(content)})
                         else:
                             await db.update_clone(bot_id, {db_field: content})
