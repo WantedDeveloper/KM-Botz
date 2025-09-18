@@ -209,10 +209,6 @@ async def start(client, message):
         if not clone:
             return
 
-        owner_id = clone.get("user_id")
-        moderators = clone.get("moderators", [])
-        moderators = [int(m) for m in moderators]
-
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
             await clonedb.add_user(me.id, message.from_user.id)
@@ -339,6 +335,19 @@ async def start(client, message):
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
 
+        owner_id = clone.get("user_id")
+        moderators = [int(m) for m in clone.get("moderators", [])]
+        caption = clone.get("caption", None)
+        buttons_data = clone.get("button", [])
+        access_token = clone.get("access_token", False)
+        tutorial_url = clone.get("access_token_tutorial", None)
+        premium = clone.get("premium", [])
+        premium_upi = clone.get("premium_upi", None)
+        auto_delete = clone.get("auto_delete", False)
+        auto_delete_time = clone.get("auto_delete_time", 1)
+        auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
+        forward_protect = clone.get("forward_protect", False)
+
         data = message.command[1]
         try:
             pre, file_id = data.split('_', 1)
@@ -350,20 +359,20 @@ async def start(client, message):
         if data.startswith("VERIFY-"):
             parts = data.split("-", 2)
             if len(parts) != 3:
-                return await message.reply_text("❌ Invalid or expired link!", protect_content=True)
+                return await message.reply_text("❌ Invalid or expired link!", protect_content=forward_protect)
 
             user_id, token = parts[1], parts[2]
             if str(message.from_user.id) != user_id:
-                return await message.reply_text("❌ Invalid or expired link!", protect_content=True)
+                return await message.reply_text("❌ Invalid or expired link!", protect_content=forward_protect)
 
             if await check_token(client, user_id, token):
                 await verify_user(client, user_id, token)
                 return await message.reply_text(
                     f"Hey {message.from_user.mention}, **verification** successful! ✅",
-                    protect_content=clone.get("forward_protect", False)
+                    protect_content=forward_protect
                 )
             else:
-                return await message.reply_text("❌ Invalid or expired link!", protect_content=True)
+                return await message.reply_text("❌ Invalid or expired link!", protect_content=forward_protect)
 
         # --- Single File Handler ---
         if data.startswith("SINGLE-"):
@@ -372,15 +381,13 @@ async def start(client, message):
                 decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii")
                 pre, decode_file_id = decoded.split("_", 1)
 
-                if clone.get("access_token", False) and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
+                if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
 
-                    premium_upi = clone.get("premium_upi", None)
                     if premium_upi:
                         btn.append([InlineKeyboardButton("🛡 Remove Ads", callback_data='remove_ads')])
 
-                    tutorial_url = clone.get("access_token_tutorial", None)
                     if tutorial_url:
                         btn.append([InlineKeyboardButton("ℹ️ Tutorial", url=tutorial_url)])
 
@@ -388,73 +395,53 @@ async def start(client, message):
 
                     return await message.reply_text(
                         "🚫 You are not **verified**! Kindly **verify** to continue.",
-                        protect_content=clone.get("forward_protect", False),
+                        protect_content=forward_protect,
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
 
-                msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
-                f_caption = None
-                sent_msg = None
-                if msg.media:
-                    file = getattr(msg, msg.media.value)
-                    file_name = getattr(file, "file_name", None) or "Media"
-                    file_size = getattr(file, "file_size", None)
+                file_record = await db.get_file(int(db_file_id))  # implement get_file in db.py
+                if not file_record:
+                    return await message.reply("❌ File not found in database.")
 
-                    if file_size and isinstance(file_size, int):
-                        await db.add_storage_used(me.id, file_size)
-    
-                    original_caption = msg.caption or ""
-                    if clone.get("caption", None):
-                        try:
-                            f_caption = clone.get("caption", None).format(
-                                file_name=file_name,
-                                file_size=get_size(file_size) if file_size else "N/A",
-                                caption=original_caption
-                            )
-                        except:
-                            f_caption = original_caption or f"<code>{file_name}</code>"
-                    else:
-                        f_caption = original_caption or f"<code>{file_name}</code>"
-
-                    if not f_caption or not f_caption.strip():
-                        f_caption = "None"
-
-                    sent_msg = await msg.copy(chat_id=message.from_user.id, caption=f_caption, protect_content=clone.get("forward_protect", False))
-
-                    buttons_data = clone.get("button", [])
-                    buttons = []
-                    for btn in buttons_data:
-                        buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
-
-                    if buttons:
-                        current_caption = sent_msg.caption or ""
-                        if (f_caption and f_caption != current_caption) or not sent_msg.reply_markup:
-                            try:
-                                await sent_msg.edit_caption(
-                                    f_caption or current_caption,
-                                    reply_markup=InlineKeyboardMarkup(buttons)
-                                )
-                            except Exception as e:
-                                if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                    raise
-                    elif f_caption and f_caption != (sent_msg.caption or ""):
-                        try:
-                            await sent_msg.edit_caption(f_caption)
-                        except Exception as e:
-                            if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                raise
-                else:
-                    sent_msg = await msg.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
-
-                if sent_msg:
-                    if clone.get("auto_delete", False):
-                        auto_delete_time = clone.get("auto_delete_time", 1)
-                        k = await sent_msg.reply(
-                            clone.get('auto_delete_msg', script.AD_TXT).format(time=auto_delete_time),
-                            quote=True
+                f_caption = file_record.get("caption") or ""
+                if caption:
+                    try:
+                        f_caption = caption.format(
+                            file_name=file_record.get("file_name") or "Media",
+                            file_size=get_size(file_record.get("file_size")) if file_record.get("file_size") else "N/A",
+                            caption=file_record.get("caption") or "None"
                         )
-                        asyncio.create_task(auto_delete_message(client, sent_msg, k, auto_delete_time))
-                return
+                    except:
+                        f_caption = file_record.get("caption") or "None"
+
+                if not f_caption.strip():
+                    f_caption = "None"
+
+                sent_msg = None
+                if file_record.get("file_id"):
+                    sent_msg = await client.send_cached_media(
+                        chat_id=message.from_user.id,
+                        file_id=file_record["file_id"],
+                        caption=f_caption,
+                        protect_content=forward_protect
+                    )
+                else:
+                    sent_msg = await message.reply_text(f_caption, protect_content=forward_protect)
+        
+                if buttons_data:
+                    buttons = [[InlineKeyboardButton(btn["name"], url=btn["url"])] for btn in buttons_data]
+                    try:
+                        await sent_msg.edit_caption(f_caption, reply_markup=InlineKeyboardMarkup(buttons))
+                    except Exception as e:
+                        if "MESSAGE_NOT_MODIFIED" not in str(e):
+                            raise
+
+                if sent_msg and auto_delete:
+                    notice = await sent_msg.reply(
+                    auto_delete_msg.format(time=auto_delete_time),
+                    quote=True
+                )
+                asyncio.create_task(auto_delete_message(client, sent_msg, notice, auto_delete_time))
             except UserIsBlocked:
                 print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
                 return
@@ -468,15 +455,13 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
-                if clone.get("access_token", False) and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
+                if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
 
-                    premium_upi = clone.get("premium_upi", None)
                     if premium_upi:
                         btn.append([InlineKeyboardButton("🛡 Remove Ads", callback_data='remove_ads')])
 
-                    tutorial_url = clone.get("access_token_tutorial", None)
                     if tutorial_url:
                         btn.append([InlineKeyboardButton("ℹ️ Tutorial", url=tutorial_url)])
 
@@ -484,7 +469,7 @@ async def start(client, message):
 
                     return await message.reply_text(
                         "🚫 You are not **verified**! Kindly **verify** to continue.",
-                        protect_content=clone.get("forward_protect", False),
+                        protect_content=forward_protect,
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
 
@@ -526,9 +511,9 @@ async def start(client, message):
                                 await db.add_storage_used(me.id, file_size)
 
                             original_caption = info.caption or ""
-                            if clone.get("caption", None):
+                            if caption:
                                 try:
-                                    f_caption = clone.get("caption", None).format(
+                                    f_caption = caption.format(
                                         file_name=file_name,
                                         file_size=get_size(file_size) if file_size else "N/A",
                                         caption=original_caption
@@ -546,7 +531,7 @@ async def start(client, message):
                                     sent_msg = await info.copy(
                                         chat_id=message.from_user.id,
                                         caption=f_caption,
-                                        protect_content=clone.get("forward_protect", False)
+                                        protect_content=forward_protect
                                     )
                                     break
                                 except FloodWait as e:
@@ -556,7 +541,6 @@ async def start(client, message):
                                         raise
                                     break
 
-                            buttons_data = clone.get("button", [])
                             buttons = []
                             for btn in buttons_data:
                                 buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
@@ -579,12 +563,12 @@ async def start(client, message):
                                     if "MESSAGE_NOT_MODIFIED" not in str(e):
                                         raise
                         else:
-                            sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=clone.get("forward_protect", False))
+                            sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=forward_protect)
 
                         sent_files.append(sent_msg)
                         await asyncio.sleep(1.5)
                     except FloodWait as e:
-                        print(f"⚠️ Clone Batch File Handler Flood wait {e.x} seconds, sleeping...")
+                        print(f"⚠️ Clone Batch File Handler Flood wait {e.value} seconds, sleeping...")
                         await asyncio.sleep(e.value)
                         continue
                     except UserIsBlocked:
@@ -594,10 +578,9 @@ async def start(client, message):
                         print(f"⚠️ Clone Batch File Handler Error sending message: {e}")
                         continue
 
-                if clone.get("auto_delete", False):
-                    auto_delete_time = clone.get("auto_delete_time", 1)
+                if auto_delete:
                     k = await message.reply(
-                        clone.get('auto_delete_msg', script.AD_TXT).format(time=auto_delete_time),
+                        auto_delete_msg.format(time=auto_delete_time),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, sent_files, k, auto_delete_time))
@@ -618,18 +601,16 @@ async def start(client, message):
         # --- Auto Post Handler ---
         if data.startswith("AUTO-"):
             encoded = data.replace("AUTO-", "", 1)
-            decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii")
+            decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii").strip()
             pre, file_id = decoded.split("_", 1)
 
-            if clone.get("access_token", False) and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in clone.get("premium", []) and not await check_verification(client, message.from_user.id):
+            if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                 verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                 btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
 
-                premium_upi = clone.get("premium_upi", None)
                 if premium_upi:
                     btn.append([InlineKeyboardButton("🛡 Remove Ads", callback_data='remove_ads')])
 
-                tutorial_url = clone.get("access_token_tutorial", None)
                 if tutorial_url:
                     btn.append([InlineKeyboardButton("ℹ️ Tutorial", url=tutorial_url)])
 
@@ -637,7 +618,7 @@ async def start(client, message):
 
                 return await message.reply_text(
                     "🚫 You are not **verified**! Kindly **verify** to continue.",
-                    protect_content=clone.get("forward_protect", False),
+                    protect_content=forward_protect,
                     reply_markup=InlineKeyboardMarkup(btn)
                 )
 
@@ -645,7 +626,7 @@ async def start(client, message):
                 msg = await client.send_cached_media(
                     chat_id=message.from_user.id,
                     file_id=file_id,
-                    protect_content=clone.get("forward_protect", False)
+                    protect_content=forward_protect
                 )
 
                 filetype = msg.media
@@ -657,9 +638,9 @@ async def start(client, message):
                     await db.add_storage_used(me.id, file_size)
 
                 original_caption = msg.caption or ""
-                if clone.get("caption", None):
+                if caption:
                     try:
-                        f_caption = clone.get("caption", None).format(
+                        f_caption = caption.format(
                             file_name=file_name,
                             file_size=get_size(file_size) if file_size else "N/A",
                             caption=original_caption
@@ -669,7 +650,6 @@ async def start(client, message):
                 else:
                     f_caption = original_caption or f"<code>{file_name}</code>"
 
-                buttons_data = clone.get("button", [])
                 buttons = []
                 for btn in buttons_data:
                     buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
@@ -679,10 +659,9 @@ async def start(client, message):
                 else:
                     await msg.edit_caption(f_caption)
 
-                if clone.get("auto_delete", False):
-                    auto_delete_time = clone.get("auto_delete_time", 1)
+                if auto_delete:
                     k = await msg.reply(
-                        clone.get('auto_delete_msg', script.AD_TXT).format(time=auto_delete_time),
+                        auto_delete_msg.format(time=auto_delete_time),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time))
@@ -877,9 +856,40 @@ async def link(client, message):
             if g_msg.text and g_msg.text.lower() == '/cancel':
                 return await message.reply('🚫 Process has been cancelled.')
 
-        post = await g_msg.copy(MESSAGE_CHANNEL)
-        file_id = str(post.id)
-        string = f"file_{file_id}"
+        file_id = None
+        file_name = None
+        file_size = None
+        media_type = "text"
+
+        if g_msg.media:
+            media_type = g_msg.media.value
+            if g_msg.document:
+                file_id = g_msg.document.file_id
+                file_name = g_msg.document.file_name
+                file_size = g_msg.document.file_size
+            elif g_msg.video:
+                file_id = g_msg.video.file_id
+                file_name = g_msg.video.file_name or "Video"
+                file_size = g_msg.video.file_size
+            elif g_msg.audio:
+                file_id = g_msg.audio.file_id
+                file_name = g_msg.audio.file_name or "Audio"
+                file_size = g_msg.audio.file_size
+            elif g_msg.photo:
+                file_id = g_msg.photo.file_id
+                file_size = photo.file_size
+                file_name = "Photo"
+
+        db_file_id = await db.add_file(
+            bot_id=me.id,
+            file_id=file_id,
+            file_name=file_name,
+            file_size=file_size,
+            caption=g_msg.caption or g_msg.text,
+            media_type=media_type
+        )
+
+        string = f"file_{db_file_id}"
         outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
         share_link = f"https://t.me/{me.username}?start=SINGLE-{outstr}"
 
@@ -1061,7 +1071,6 @@ async def batch(client, message):
             f"Here is your link:\n{share_link}",
             reply_markup=reply_markup
         )
-
     except ChannelInvalid:
         await message.reply('⚠️ This may be a private channel / group. Make me an admin over there to index the files.')
     except (UsernameInvalid, UsernameNotModified):
@@ -1804,7 +1813,6 @@ async def message_capture(client: Client, message: Message):
                     try:
                         await db.add_media(
                             bot_id=me.id,
-                            msg_id=message.id,
                             file_id=media_file_id,
                             caption=message.caption or "",
                             media_type=media_type,
@@ -1816,7 +1824,6 @@ async def message_capture(client: Client, message: Message):
                         await asyncio.sleep(e.value)
                         await db.add_media(
                             bot_id=me.id,
-                            msg_id=message.id,
                             file_id=media_file_id,
                             caption=message.caption or "",
                             media_type=media_type,
