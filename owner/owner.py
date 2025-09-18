@@ -2497,7 +2497,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ADD_MODERATOR(user_id, None)
+                ADD_MODERATOR.pop(user_id, None)
                 await show_moderator_menu(client, query.message, bot_id)
 
             # Remove Moderator Menu
