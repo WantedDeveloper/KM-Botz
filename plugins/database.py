@@ -115,6 +115,7 @@ class Database:
                 # Auto Post
                 'auto_post': False,
                 'target_channel': None,
+                'auto_post_sleep': 1,
                 # Premium User
                 'premium_upi': None,
                 'premium_user': [],
@@ -162,6 +163,7 @@ class Database:
                 # Auto Post
                 'auto_post': False,
                 'target_channel': None,
+                'auto_post_sleep': 1,
                 # Premium User
                 'premium_upi': None,
                 'premium_user': [],

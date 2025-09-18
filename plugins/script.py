@@ -1,115 +1,113 @@
 class script(object):
     START_TXT = """Hello {user} 👋 
 
-My Name {bot}
+My name is {bot}.
 
-I am a permenant file store bot and users can access stored messages by using a shareable link given by me
+I am a permanent file store bot.  
+Users can access stored messages using the shareable links I provide.
 
-To know more click **help** button"""
+To know more, click the **Help** button."""
 
     HELP_TXT = """<u>**✨ HELP MENU**</u>
 
-I am a permenant file store bot. you can store files from your public channel without i am admin in there. Either your channel or group is private first make me admin in there. Then you can store your files by using below mentioned commands and you can access stored files by using shareable link given by me.
+I am a permanent file store bot.  
+You can store files from your public channel without me being an admin.  
+If your channel or group is private, please make me an admin first.  
+
+Once set up, you can store your files using the commands below and access them via shareable links.
 
 📚 Available Commands:
-🔻 /start - Check i am alive.
-🔻 /help - View help menu.
-🔻 /genlink - To store a single message or file.
-🔻 /batch - To store mutiple messages from a channel.
-🔻 /broadcast - Broadcast a message to users.
-🔻 /stats - View bot statistics.
-🔻 /contact - Message to admin."""
+🔻 /start - Check if I am alive.  
+🔻 /help - View help menu.  
+🔻 /genlink - Store a single message or file.  
+🔻 /batch - Store multiple messages from a channel.  
+🔻 /broadcast - Broadcast a message to all users.  
+🔻 /stats - View bot statistics.  
+🔻 /contact - Message the admin."""
 
     ABOUT_TXT = """<u>**✨ ABOUT ME**</u>
 
-🤖 My Name: {bot}
-
-📝 Language: <a href=https://www.python.org>Python3</a>
-
-📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>
-
-🧑🏻‍💻 Developer: <a href=https://t.me/DeadxNone>Developer</a>
-
-👥 Support Group: <a href=https://t.me/+8E9nKxs8Y-Y2OGRl>Support</a>
-
-📢 Update Channel: <a href=https://t.me/+YczdaoCKP-AxMWFl>Update</a>"""
+🤖 Name: {bot}  
+📝 Language: <a href=https://www.python.org>Python 3</a>  
+📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>  
+🧑🏻‍💻 Developer: <a href=https://t.me/DeadxNone>Developer</a>  
+👥 Support Group: <a href=https://t.me/+8E9nKxs8Y-Y2OGRl>Support</a>  
+📢 Update Channel: <a href=https://t.me/+YczdaoCKP-AxMWFl>Updates</a>"""
 
     CABOUT_TXT = """<u>**✨ ABOUT ME**</u>
 
-🤖 My Name: {bot}
-
-📝 Language: <a href=https://www.python.org>Python3</a>
-
-📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>
-
+🤖 Name: {bot}  
+📝 Language: <a href=https://www.python.org>Python 3</a>  
+📚 Library: <a href=https://docs.pyrogram.org>Pyrogram</a>  
 🧑🏻‍💻 Developer: <a href=tg://user?id={developer}>Developer</a>"""
 
     MANAGEC_TXT = """<u>**✨ MANAGE CLONE**</u>
 
-You can now manage and create your very own identical clone bot, mirroring all my awesome features, using the given buttons."""
+Manage and create your very own clone bot, identical to me, with all the same awesome features.  
+Use the buttons below to get started."""
 
-    CLONE_TXT = """1️⃣ Send <code>/newbot</code> to @BotFather.
-2️⃣ Give a name for your bot.
-3️⃣ Give a unique username.
-4️⃣ Then you will get a message with your bot token.
-5️⃣ Forward that message to me.
+    CLONE_TXT = """1️⃣ Send <code>/newbot</code> to @BotFather.  
+2️⃣ Choose a name for your bot.  
+3️⃣ Choose a unique username.  
+4️⃣ BotFather will give you a token.  
+5️⃣ Forward that token message to me.  
 
-Then i am try to create a clone bot of me for u only 😌"""
+Then I’ll create a clone bot for you 😌"""
 
     CUSTOMIZEC_TXT = """<u>**✨ CUSTOMIZE CLONE**</u>
 
 🖍️ Username: {username}
 
-If you want to modify your clone bot then do it from here."""
+Modify and customize your clone bot from here."""
 
     ST_MSG_TXT = """<u>**✨ START MESSAGE**</u>
 
-customize your clone start message using the following buttons."""
+Customize the start message of your clone bot using the options below."""
 
     ST_TXT_TXT = """<u>**✨ START TEXT**</u>
 
-Personalize your clone start message text to suit your preferences. Use the provided button to edit the start message text of your clone."""
+Personalize the start message text of your clone bot to suit your preferences."""
 
-    EDIT_ST_TXT = """<code>{user}</code> : mention user
+    EDIT_ST_TXT = """<code>{user}</code> → mention user
 
-Eg: Hi {user} 👋
+Example:
+Hi {user} 👋  
 I am a file store bot.
 
-Now send your new start message text."""
+📝 Now send your new start message text."""
 
     ST_PIC_TXT = """<u>**✨ START PHOTO**</u>
 
-You have the option to include a photo along with your start message."""
+Include a photo to be displayed along with your start message."""
 
     EDIT_ST_PIC = """🖼️ Please upload the new start photo you would like to use.
 
-ℹ️ This photo will be displayed on the bot’s start message."""
+ℹ️ This photo will be shown in your bot’s start message."""
 
     CAPTION_TXT = """<u>**✨ CUSTOM CAPTION**</u>
 
-You can add a custom caption to your media messages instead of its original caption.
+Add a custom caption to your media messages instead of using the original caption.
 
-<code>{file_name}</code> : File Name
-<code>{file_size}</code> : File size
-<code>{caption}</code> : Orginal Caption"""
+Available placeholders:
+<code>{file_name}</code> → File name  
+<code>{file_size}</code> → File size  
+<code>{caption}</code> → Original caption"""
 
     EDIT_CAPTION_TXT = """📝 Please provide the new caption text you want to set.
 
-ℹ️ This caption will be added to your shareable link message."""
+ℹ️ This caption will be applied to your shareable link messages."""
 
     BUTTON_TXT = """<u>**✨ CUSTOM BUTTON**</u>
 
-You can add a custom button to your media messages.
+Add up to 3 custom buttons to your media messages."""
 
-You can add up to 3 buttons."""
+    EDIT_BUTTON_TXT = """🔘 Please provide the button name and URL you want to add.
 
-    EDIT_BUTTON_TXT = """"🔘 Please provide the button name you want to add.
-
-ℹ️ This will be the text displayed on the button."""
+ℹ️ The name will be shown on the button, and the URL will open when users click it."""
 
     WORD_FILTER_TXT = """<u>**✨ OFFENSIVE WORD FILTER**</u>
 
-You can add a offensive word filter to your forwarded/post message.
+Block or filter offensive words in forwarded or posted messages.
 
 Current Status: {status}"""
 
@@ -139,15 +137,15 @@ Current Status: {status}"""
     "fool", "twat", "prick", "imbecile", "dork", "weirdo", "slob", "nerd", "loser", "simp", "sex"
 ]
 
-    MEDIA_FILTER_TXT = """<u>**✨ OFFENSIVE WORD FILTER**</u>
+    MEDIA_FILTER_TXT = """<u>**✨ OFFENSIVE MEDIA FILTER**</u>
 
-You can add a offensive media filter to your forwarded/post message.
+Automatically block or filter offensive media in forwarded or posted messages.
 
 Current Status: {status}"""
 
     RANDOM_CAPTION_TXT = """<u>**✨ RANDOM CAPTION**</u>
 
-You can add a random caption to your forwarded/post message.
+Enable random captions for your forwarded or posted messages.
 
 Current Status: {status}"""
 
@@ -256,85 +254,96 @@ Current Status: {status}"""
 
     HEADER_TXT = """<u>**✨ CUSTOM HEADER**</u>
 
-You can add a custom header to your forwarded/post message."""
+Add a custom header that will appear at the top of every forwarded or posted message."""
 
-    EDIT_HEADER_TXT = """"📝 Please send the header text you would like to set.
+    EDIT_HEADER_TXT = """📝 Please send the header text you would like to set.
 
-ℹ️ This text will be automatically added at the top of every forwarded/post message."""
+ℹ️ This text will automatically appear at the **top** of every forwarded or posted message."""
 
     FOOTER_TXT = """<u>**✨ CUSTOM FOOTER**</u>
 
-You can add a custom footer to your forwarded/post message."""
+Add a custom footer that will appear at the bottom of every forwarded or posted message."""
 
-    EDIT_FOOTER_TXT = """"📝 Please send the footer text you would like to set.
+    EDIT_FOOTER_TXT = """📝 Please send the footer text you would like to set.
 
-ℹ️ This text will be automatically added at the bottom of every forwarded/post message."""
+ℹ️ This text will automatically appear at the **bottom** of every forwarded or posted message."""
 
     FSUB_TXT = """<u>**✨ FORCE SUBSCRIBE**</u>
 
-Users can only use your clone bot after joining all force sub channels.
+Users must join your required channels before they can use the clone bot.
 
-You can add up to 4 channels."""
+You can add up to **4 channels**."""
 
-    EDIT_FSUB_TXT = """🔗 Please send me the channel id or username you want to add for Force Subscribe.
+    EDIT_FSUB_TXT = """🔗 Please send me the channel ID or username you want to add for Force Subscribe.
 
-✅ Example:
-`-1001234567890`  (for private channel ID)
-`@YourChannel`  (for public channel username)
-    
-⚠️ Note: Make sure I am an admin in that channel with permission to invite users."""
+✅ Examples:
+`-1001234567890` → private channel ID  
+`@YourChannel` → public channel username
+
+⚠️ Note: Make sure I am an **admin** in that channel with permission to invite users."""
 
     TOKEN_TXT = """<u>**✨ ACCESS TOKEN**</u>
 
-Users need to pass a shortened link to gain special access to messages from all clone shareable links.
+Users must complete a verification link to gain special access to messages from all clone shareable links.
 
-This access will be valid for the next custom validity period.
+The access remains valid for the configured validity period.
 
 Current Status: {status}"""
 
     AT_VALIDITY_TXT = """<u>**✨ ACCESS TOKEN VALIDITY**</u>
 
-You can customize the special access validty about access-token that is remove ads to users when they access the links."""
+You can set how long the special access (via access token) will remain valid. 
+Once this period ends, users will need to verify again to continue without ads."""
 
     AT_TUTORIAL_TXT = """<u>**✨ ACCESS TOKEN TUTORIAL**</u>
 
-You can customize the special access tutorial about access-token that is show how to remove ads to users when they access the links."""
+You can provide a tutorial link to guide users on how the access token works 
+and how it removes ads when accessing clone links."""
 
     AUTO_POST_TXT = """<u>**✨ AUTO POST**</u>
 
-You can add a auto post to your channel.
+You can enable automatic posting to your channel. 
+When enabled, the bot will automatically send posts at the configured interval.
 
 Current Status: {status}"""
 
+    AP_SLEEP_TXT = """<u>**✨ AUTO POST DELAY**</u>
+
+You can customize the waiting time (sleep) between one auto post and the next.
+This controls how long the bot waits before sending another auto post to users."""
+
     PREMIUM_TXT = """<u>**✨ PREMIUM USERS**</u>
 
-Premium users have access to all your clone shareable links."""
+Premium users can access all your clone shareable links without restrictions."""
 
     DELETE_TXT = """<u>**✨ AUTO DELETE**</u>
+
+You can enable or disable automatic message deletion.
 
 Current Status: {status}"""
 
     AD_TIME_TXT = """<u>**✨ AUTO DELETE TIME**</u>
 
-You can customize the alert time about auto-delete that is sent last to users when they access the links."""
+Set how long messages will remain before being automatically deleted."""
 
     AD_MSG_TXT = """<u>**✨ AUTO DELETE MESSAGE**</u>
 
-You can customize the alert message about auto-delete that is sent last to users when they access the links."""
+Customize the warning message shown to users before their messages are auto-deleted."""
 
-    AD_TXT = """<u>⚠️ IMPORTANT:</u>
+    AD_TXT = """<u>⚠️ IMPORTANT</u>
 
-All Messages will be deleted after {time} hour. Please save or forward these messages to your personal saved messages to avoid losing them!"""
+All messages will be deleted after {time} hour(s).  
+Please save or forward them to your personal saved messages to avoid losing them!"""
 
     FORWARD_TXT = """<u>**✨ FORWARD PROTECTION**</u>
 
-Restrict Clone users from forwarding messages from shareable link.
+Restrict users from forwarding messages received through clone shareable links.
 
 Current Status: {status}"""
 
     MODERATOR_TXT = """<u>**✨ MODERATOR**</u>
 
-Moderators have access to all your clone features."""
+Moderators can manage all clone features and have special access permissions."""
 
     REACTIONS = ["🤝", "😇", "🤗", "😍", "👍", "🎅", "😐", "🥰", "🤩", "😱", "🤣", "😘", "👏", "😛", "😈", "🎉", "⚡️", "🫡", "🤓", "😎", "🏆", "🔥", "🤭", "🌚", "🆒", "👻", "😁"]
 
