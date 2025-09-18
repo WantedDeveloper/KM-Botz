@@ -26,6 +26,7 @@ ACCESS_TOKEN = {}
 ACCESS_TOKEN_VALIDITY = {}
 ACCESS_TOKEN_TUTORIAL = {}
 AUTO_POST = {}
+AUTO_POST_SLEEP = {}
 PREMIUM_UPI = {}
 ADD_PREMIUM = {}
 AUTO_DELETE_TIME = {}
@@ -849,7 +850,7 @@ async def show_post_menu(client, message, bot_id):
             )
         else:
             buttons = []
-            buttons.append([InlineKeyboardButton("✅ Enable", callback_data=f"at_status_{bot_id}")])
+            buttons.append([InlineKeyboardButton("✅ Enable", callback_data=f"ap_status_{bot_id}")])
             status = "🔴 Disabled"
 
         buttons.append([InlineKeyboardButton("⬅️ Back", callback_data=f"manage_{bot_id}")])
@@ -2127,7 +2128,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ad_time = clone.get("auto_post_sleep", 1)
+                ap_sleep = clone.get("auto_post_sleep", 1)
                 unit = "hour" if ap_sleep == 1 else "hours"
                 await query.answer(f"📝 Current Auto Post Sleep:\n\n{ap_sleep} {unit}", show_alert=True)
 
