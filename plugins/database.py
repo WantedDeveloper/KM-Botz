@@ -1,5 +1,6 @@
 import motor.motor_asyncio, time
 from datetime import datetime, timedelta
+from bson import ObjectId
 from plugins.config import *
 from plugins.script import script
 
@@ -256,6 +257,12 @@ class Database:
         }
         result = await self.media.insert_one(data)
         return result.inserted_id
+
+    async def get_file(self, db_file_id):
+        try:
+            return await self.media.find_one({"_id": ObjectId(db_file_id)})
+        except:
+            return None
 
     async def add_media(self, bot_id: int, file_id: str, caption: str, media_type: str, date):
         await self.media.update_one(
