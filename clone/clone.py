@@ -399,7 +399,7 @@ async def start(client, message):
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
 
-                file_record = await db.get_file(int(db_file_id))  # implement get_file in db.py
+                file_record = await db.get_file(int(db_file_id))
                 if not file_record:
                     return await message.reply("❌ File not found in database.")
 
@@ -877,7 +877,7 @@ async def link(client, message):
                 file_size = g_msg.audio.file_size
             elif g_msg.photo:
                 file_id = g_msg.photo.file_id
-                file_size = photo.file_size
+                file_size = g_msg.photo.file_size
                 file_name = "Photo"
 
         db_file_id = await db.add_file(
