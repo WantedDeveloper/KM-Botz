@@ -455,6 +455,9 @@ async def start(client, message):
                         )
                         asyncio.create_task(auto_delete_message(client, sent_msg, k, auto_delete_time))
                 return
+            except UserIsBlocked:
+                print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
+                return
             except Exception as e:
                 await client.send_message(
                     LOG_CHANNEL,
@@ -489,7 +492,7 @@ async def start(client, message):
                 msgs = BATCH_FILES.get(file_id)
 
                 if not msgs:
-                    decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
+                    decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("utf-8", errors="ignore")
                     msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
                     media = getattr(msg, msg.media.value)
                     file_id = media.file_id
@@ -584,6 +587,9 @@ async def start(client, message):
                         print(f"⚠️ Clone Batch File Handler Flood wait {e.x} seconds, sleeping...")
                         await asyncio.sleep(e.value)
                         continue
+                    except UserIsBlocked:
+                        print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
+                        return
                     except Exception as e:
                         print(f"⚠️ Clone Batch File Handler Error sending message: {e}")
                         continue
@@ -600,11 +606,14 @@ async def start(client, message):
                 await asyncio.sleep(5)
                 await sts.delete()
             except Exception as e:
-                await client.send_message(
-                    LOG_CHANNEL,
-                    f"⚠️ Clone Batch File Handler Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
-                )
-                print(f"⚠️ Clone Batch File Handler Error: {e}")
+                if isinstance(e, UserIsBlocked):
+                    print(f"⚠️ User {message.from_user.id} blocked the bot. Ignoring.")
+                else:
+                    await client.send_message(
+                        LOG_CHANNEL,
+                        f"⚠️ Clone Batch File Handler Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
+                    )
+                    print(f"⚠️ Clone Batch File Handler Error: {e}")
 
         # --- Auto Post Handler ---
         if data.startswith("AUTO-"):
@@ -677,6 +686,9 @@ async def start(client, message):
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time))
+                return
+            except UserIsBlocked:
+                print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
                 return
             except Exception as e:
                 await client.send_message(
@@ -809,7 +821,8 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                sleep_time = int(fresh.get("interval_sec", 3600))
+                hours = int(fresh.get("auto_post_time", 1))
+                sleep_time = hours * 3600
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
