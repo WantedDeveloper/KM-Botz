@@ -696,6 +696,9 @@ async def start(client, message):
                     f"⚠️ Clone Auto Post Handler Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
                 )
                 print(f"⚠️ Clone Auto Post Handler Error: {e}")
+    except UserIsBlocked:
+        print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
+        return
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
@@ -1598,6 +1601,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 f"⚠️ Clone Unknown Callback Data Received:\n\n{data}\n\nUser: {query.from_user.id}\n\nKindly check this message for assistance."
             )
             await query.answer("⚠️ Unknown action.", show_alert=True)
+    except UserIsBlocked:
+        print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
+        return
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
