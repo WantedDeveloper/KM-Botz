@@ -244,12 +244,24 @@ class Database:
         return clone.get("banned_users", []) if clone else []
 
     # ---------------- MEDIA ----------------
-    async def add_media(self, bot_id: int, msg_id: int, file_id: str, caption: str, media_type: str, date):
+    async def add_file(self, bot_id, file_id, file_name=None, file_size=None, caption=None, media_type="text"):
+        data = {
+            "bot_id": int(bot_id),
+            "file_id": file_id,
+            "file_name": file_name,
+            "file_size": file_size,
+            "caption": caption,
+            "media_type": media_type,
+            "date": datetime.utcnow()
+        }
+        result = await self.media.insert_one(data)
+        return result.inserted_id
+
+    async def add_media(self, bot_id: int, file_id: str, caption: str, media_type: str, date):
         await self.media.update_one(
             {"bot_id": bot_id, "file_id": file_id},
             {"$setOnInsert": {
                 "bot_id": bot_id,
-                "msg_id": msg_id,
                 "file_id": file_id,
                 "caption": caption or "",
                 "media_type": media_type,
@@ -291,17 +303,11 @@ class Database:
             {"$set": {"posted": False}}
         )
 
-    async def get_media_by_id(self, bot_id: int, msg_id: int):
-        return await self.media.find_one({"bot_id": bot_id, "msg_id": msg_id})
-
     async def get_all_clone_media(self, bot_id: int):
         return self.media.find({"bot_id": bot_id})
 
     async def get_all_media(self):
         return self.media.find({})
-
-    async def delete_media(self, bot_id: int, msg_id: int):
-        await self.media.delete_one({"bot_id": bot_id, "msg_id": msg_id})
 
     async def delete_all_clone_media(self, bot_id: int):
         result = await self.media.delete_many({"bot_id": bot_id})
