@@ -547,7 +547,7 @@ async def start(client, message):
                                     )
                                     break
                                 except FloodWait as e:
-                                    await asyncio.sleep(e.x)
+                                    await asyncio.sleep(e.value)
                                 except Exception as e:
                                     if "MESSAGE_NOT_MODIFIED" not in str(e):
                                         raise
