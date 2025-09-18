@@ -399,7 +399,7 @@ async def start(client, message):
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
 
-                file_record = await db.get_file(decode_file_id))
+                file_record = await db.get_file(decode_file_id)
                 if not file_record:
                     return await message.reply("❌ File not found in database.")
 
