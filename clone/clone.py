@@ -582,7 +582,7 @@ async def start(client, message):
                         await asyncio.sleep(1.5)
                     except FloodWait as e:
                         print(f"⚠️ Clone Batch File Handler Flood wait {e.x} seconds, sleeping...")
-                        await asyncio.sleep(e.x)
+                        await asyncio.sleep(e.value)
                         continue
                     except Exception as e:
                         print(f"⚠️ Clone Batch File Handler Error sending message: {e}")
