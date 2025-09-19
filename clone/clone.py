@@ -347,8 +347,8 @@ async def start(client, message):
         auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
         forward_protect = clone.get("forward_protect", False)
 
-        number = "".join(filter(str.isdigit, ad_time)) or "0"
-        unit_char = "".join(filter(str.isalpha, ad_time)) or "h"
+        number = "".join(filter(str.isdigit, auto_delete_time)) or "0"
+        unit_char = "".join(filter(str.isalpha, auto_delete_time)) or "h"
 
         unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
         unit = unit_map.get(unit_char.lower(), "hour(s)")
