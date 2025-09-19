@@ -7,7 +7,7 @@ from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait,
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
 from plugins.config import *
 from plugins.database import db, JoinReqs
-from plugins.clone_instance import set_client, get_client, parse_time
+from plugins.clone_instance import set_client, get_client
 from plugins.script import script
 from clone.clone import auto_post_clone
         
@@ -751,7 +751,7 @@ async def show_token_menu(client, message, bot_id):
         current = clone.get("access_token", False)
         shorten_link = clone.get("shorten_link", None)
         shorten_api = clone.get("shorten_api", None)
-        validity = clone.get("access_token_validity", "24h")
+        validity = clone.get("access_token_validity", 24)
         tutorial = clone.get("access_token_tutorial", None)
         renew_log = clone.get("access_token_renew_log", {})
 
@@ -838,18 +838,7 @@ async def show_post_menu(client, message, bot_id):
         clone = await db.get_clone_by_id(bot_id)
         current = clone.get("auto_post", False)
         image = clone.get("auto_post_image", None)
-        sleep = str(clone.get("auto_post_sleep", "1h"))
-
-        num_str = "".join(filter(str.isdigit, sleep)) or "0"
-        unit_char = "".join(filter(str.isalpha, sleep)) or "h"
-
-        try:
-            number = int(num_str)
-        except:
-            number = 0
-
-        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-        unit = unit_map.get(unit_char.lower(), "hour(s)")
+        sleep = clone.get("auto_post_sleep", 1)
 
         if current:
             buttons = [
@@ -860,7 +849,7 @@ async def show_post_menu(client, message, bot_id):
 
             status = (
                 f"🟢 Enabled\n\n"
-                f"⏱ Sleep: {number} {unit}\n\n"
+                f"⏱ Sleep: {sleep} hour\n\n"
             )
         else:
             buttons = []
@@ -1970,20 +1959,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                at_validity = str(clone.get("access_token_validity", "24h"))
-
-                num_str = "".join(filter(str.isdigit, at_validity)) or "0"
-                unit_char = "".join(filter(str.isalpha, at_validity)) or "h"
-
-                try:
-                    number = int(num_str)
-                except:
-                    number = 0
-
-                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-                unit = unit_map.get(unit_char.lower(), "hour(s)")
-
-                await query.answer(f"📝 Current Access Token Validity:\n\n{number} {unit}", show_alert=True)
+                at_validity = clone.get("access_token_validity", 24)
+                unit = "hour" if at_validity == 24 else "hours"
+                await query.answer(f"📝 Current Access Token Validity:\n\n{at_validity} {unit}", show_alert=True)
 
             # Default Access Token Validity
             elif action == "default_atvalidity":
@@ -1993,7 +1971,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"access_token_validity": "24h"})
+                await db.update_clone(bot_id, {"access_token_validity": 24})
                 await query.answer(f"🔄 Access token validity reset to default.", show_alert=True)
 
             # Access Token Tutorial
@@ -2241,15 +2219,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ap_sleep = clone.get("auto_post_sleep", "1h")
-
-                number = "".join(filter(str.isdigit, ap_sleep)) or "0"
-                unit_char = "".join(filter(str.isalpha, ap_sleep)) or "h"
-
-                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-                unit = unit_map.get(unit_char.lower(), "hour(s)")
-
-                await query.answer(f"📝 Current Auto Post Sleep:\n\n{number} {unit}", show_alert=True)
+                ap_sleep = clone.get("auto_post_sleep", 1)
+                unit = "hour" if ap_sleep == 1 else "hours"
+                await query.answer(f"📝 Current Auto Post Sleep:\n\n{ap_sleep} {unit}", show_alert=True)
 
             # Default Auto Post Sleep
             elif action == "default_apsleep":
@@ -2259,7 +2231,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_post_sleep": "1h"})
+                await db.update_clone(bot_id, {"auto_post_sleep": 1})
                 await query.answer(f"🔄 Auto post sleep reset to default.", show_alert=True)
 
             # Premium User
@@ -2380,19 +2352,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
                 current = clone.get("auto_delete", False)
-                time_set = str(clone.get("auto_delete_time", "1h"))
-                msg_set = str(clone.get("auto_delete_msg", script.AD_TXT))
-
-                num_str = "".join(filter(str.isdigit, time_set)) or "0"
-                unit_char = "".join(filter(str.isalpha, time_set)) or "h"
-
-                try:
-                    number = int(num_str)
-                except:
-                    number = 0
-
-                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-                unit = unit_map.get(unit_char.lower(), "hour(s)")
+                time_set = clone.get("auto_delete_time", 1)
+                msg_set = clone.get("auto_delete_msg", script.AD_TXT)
 
                 if current:
                     buttons = [
@@ -2400,7 +2361,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {number} {unit}\n\n📝 Message: {msg_set.format(time=f'{number}', unit=f'{unit}')}"
+                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
@@ -2477,15 +2438,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ad_time = clone.get("auto_delete_time", "1h")
-
-                number = "".join(filter(str.isdigit, ad_time)) or "0"
-                unit_char = "".join(filter(str.isalpha, ad_time)) or "h"
-
-                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-                unit = unit_map.get(unit_char.lower(), "hour(s)")
-
-                await query.answer(f"📝 Current Auto Delete Time:\n\n{number} {unit}", show_alert=True)
+                ad_time = clone.get("auto_delete_time", 1)
+                unit = "hour" if ad_time == 1 else "hours"
+                await query.answer(f"📝 Current Auto Delete Time:\n\n{ad_time} {unit}", show_alert=True)
 
             # Default Auto Delete Time
             elif action == "default_adtime":
@@ -2495,7 +2450,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_delete_time": "1h"})
+                await db.update_clone(bot_id, {"auto_delete_time": 1})
                 await query.answer(f"🔄 Auto delete time reset to default.", show_alert=True)
 
             # Auto Delete Message Menu
@@ -3269,6 +3224,8 @@ async def message_capture(client: Client, message: Message):
                             moderators = clone.get("moderators", [])
                             moderators.append(content)
                             await db.update_clone(bot_id, {db_field: moderators})
+                        elif db_field in ["access_token_validity", "auto_post_sleep", "auto_delete_time"]:
+                            await db.update_clone(bot_id, {db_field: int(content)})
                         else:
                             await db.update_clone(bot_id, {db_field: content})
 
