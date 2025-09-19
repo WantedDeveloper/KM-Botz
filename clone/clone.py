@@ -19,7 +19,6 @@ logger.setLevel(logging.INFO)
 CLONE_ME = {}
 TOKENS = {}
 VERIFIED = {}
-BATCH_FILES = {}
 SHORTEN_STATE = {}
 
 START_TIME = time.time()
@@ -399,35 +398,43 @@ async def start(client, message):
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
 
-                file_record = await db.get_file(decode_file_id)
-                if not file_record:
+                file = await db.get_file(decode_file_id)
+                if not file:
                     return await message.reply("❌ File not found in database.")
 
-                f_caption = file_record.get("caption") or ""
+                file_id = file.get("file_id")
+                file_name = file.get("file_name") or "Media"
+                file_size = file.get("file_size")
+                media_type = file.get("media_type", "document")
+                original_caption = file.get("caption") or ""
+
+                if file_size and isinstance(file_size, int):
+                    await db.add_storage_used(me.id, file_size)
+
                 if caption:
                     try:
                         f_caption = caption.format(
-                            file_name=file_record.get("file_name") or "Media",
-                            file_size=get_size(file_record.get("file_size")) if file_record.get("file_size") else "N/A",
-                            caption=file_record.get("caption") or "None"
+                            file_name=file_name,
+                            file_size=get_size(file_size) if file_size else "N/A",
+                            caption=original_caption
                         )
                     except:
-                        f_caption = file_record.get("caption") or "None"
+                        f_caption = original_caption
 
                 if not f_caption.strip():
                     f_caption = "None"
 
                 sent_msg = None
-                if file_record.get("file_id"):
+                if file_id:
                     sent_msg = await client.send_cached_media(
                         chat_id=message.from_user.id,
-                        file_id=file_record["file_id"],
+                        file_id=file_id,
                         caption=f_caption,
                         protect_content=forward_protect
                     )
                 else:
                     sent_msg = await message.reply_text(f_caption, protect_content=forward_protect)
-        
+
                 if buttons_data:
                     buttons = [[InlineKeyboardButton(btn["name"], url=btn["url"])] for btn in buttons_data]
                     try:
@@ -474,96 +481,72 @@ async def start(client, message):
                     )
 
                 file_id = data.split("-", 1)[1]
-                msgs = BATCH_FILES.get(file_id)
+                decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
 
-                if not msgs:
-                    decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
-                    msg = await client.get_messages(MESSAGE_CHANNEL, int(decode_file_id))
-                    media = getattr(msg, msg.media.value)
-                    file_id = media.file_id
-                    file = await client.download_media(file_id)
+                batch = await db.get_batch(decode_file_id)
+                if not batch:
+                    return await message.reply("⚠️ Batch not found or expired.")
 
-                    with open(file, "r") as file_data:
-                        msgs = json.load(file_data)
+                file_ids = batch.get("file_ids", [])
+                total_files = len(file_ids)
+                if not total_files:
+                    return await message.reply("⚠️ No files in this batch.")
 
-                    os.remove(file)
-                    BATCH_FILES[file_id] = msgs
-
-                total_files = len(msgs)
                 sts = await message.reply(f"📦 Preparing batch...\n\nTotal files: **{total_files}**")
 
                 sent_files = []
-                for index, msg in enumerate(msgs, start=1):
+                for index, db_file_id in enumerate(file_ids, start=1):
                     try:
                         await sts.edit_text(f"📤 Sending file {index}/{total_files}...")
 
-                        channel_id = int(msg.get("channel_id"))
-                        msgid = msg.get("msg_id")
-                        info = await client.get_messages(channel_id, int(msgid))
-                        f_caption = None
-                        sent_msg = None
-                        if info.media:
-                            file = getattr(info, info.media.value)
-                            file_name = getattr(file, "file_name", None) or "Media"
-                            file_size = getattr(file, "file_size", None)
+                        file = await db.get_file(db_file_id)
+                        if not file:
+                            continue
 
-                            if file_size and isinstance(file_size, int):
-                                await db.add_storage_used(me.id, file_size)
+                        file_id = file.get("file_id")
+                        file_name = file.get("file_name") or "Media"
+                        file_size = file.get("file_size")
+                        media_type = file.get("media_type", "document")
+                        original_caption = file.get("caption") or ""
 
-                            original_caption = info.caption or ""
-                            if caption:
-                                try:
-                                    f_caption = caption.format(
-                                        file_name=file_name,
-                                        file_size=get_size(file_size) if file_size else "N/A",
-                                        caption=original_caption
-                                    )
-                                except:
-                                    f_caption = original_caption or f"<code>{file_name}</code>"
-                            else:
+                        if file_size and isinstance(file_size, int):
+                            await db.add_storage_used(me.id, file_size)
+
+                        if caption:
+                            try:
+                                f_caption = caption.format(
+                                    file_name=file_name,
+                                    file_size=get_size(file_size) if file_size else "N/A",
+                                    caption=original_caption
+                                )
+                            except:
                                 f_caption = original_caption or f"<code>{file_name}</code>"
-
-                            if not f_caption or not f_caption.strip():
-                                f_caption = "None"
-
-                            while True:
-                                try:
-                                    sent_msg = await info.copy(
-                                        chat_id=message.from_user.id,
-                                        caption=f_caption,
-                                        protect_content=forward_protect
-                                    )
-                                    break
-                                except FloodWait as e:
-                                    await asyncio.sleep(e.value)
-                                except Exception as e:
-                                    if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                        raise
-                                    break
-
-                            buttons = []
-                            for btn in buttons_data:
-                                buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
-
-                            if buttons:
-                                current_caption = sent_msg.caption or ""
-                                if (f_caption and f_caption != current_caption) or not sent_msg.reply_markup:
-                                    try:
-                                        await sent_msg.edit_caption(
-                                            f_caption or current_caption,
-                                            reply_markup=InlineKeyboardMarkup(buttons)
-                                        )
-                                    except Exception as e:
-                                        if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                            raise
-                            elif f_caption and f_caption != (sent_msg.caption or ""):
-                                try:
-                                    await sent_msg.edit_caption(f_caption)
-                                except Exception as e:
-                                    if "MESSAGE_NOT_MODIFIED" not in str(e):
-                                        raise
                         else:
-                            sent_msg = await info.copy(chat_id=message.from_user.id, protect_content=forward_protect)
+                            f_caption = original_caption or f"<code>{file_name}</code>"
+
+                        if not f_caption.strip():
+                            f_caption = "None"
+
+                        sent_msg = await client.send_cached_media(
+                            chat_id=message.from_user.id,
+                            file_id=file_id,
+                            caption=f_caption,
+                            protect_content=forward_protect
+                        )
+
+                        buttons = []
+                        for btn in buttons_data:
+                            buttons.append([InlineKeyboardButton(btn["name"], url=btn["url"])])
+
+                        if buttons:
+                            try:
+                                await sent_msg.edit_caption(
+                                    f_caption,
+                                    reply_markup=InlineKeyboardMarkup(buttons)
+                                )
+                            except Exception as e:
+                                if "MESSAGE_NOT_MODIFIED" not in str(e):
+                                    raise
 
                         sent_files.append(sent_msg)
                         await asyncio.sleep(1.5)
@@ -863,22 +846,11 @@ async def link(client, message):
 
         if g_msg.media:
             media_type = g_msg.media.value
-            if g_msg.document:
-                file_id = g_msg.document.file_id
-                file_name = g_msg.document.file_name
-                file_size = g_msg.document.file_size
-            elif g_msg.video:
-                file_id = g_msg.video.file_id
-                file_name = g_msg.video.file_name or "Video"
-                file_size = g_msg.video.file_size
-            elif g_msg.audio:
-                file_id = g_msg.audio.file_id
-                file_name = g_msg.audio.file_name or "Audio"
-                file_size = g_msg.audio.file_size
-            elif g_msg.photo:
-                file_id = g_msg.photo.file_id
-                file_size = g_msg.photo.file_size
-                file_name = "Photo"
+            media_obj = getattr(msg, media_type, None)
+            if media_obj:
+                file_id = getattr(media_obj, "file_id", None)
+                file_name = getattr(media_obj, "file_name", None)
+                file_size = getattr(media_obj, "file_size", None)
 
         db_file_id = await db.add_file(
             bot_id=me.id,
@@ -985,10 +957,7 @@ async def batch(client, message):
         end_id = max(f_msg_id, l_msg_id)
         total_msgs = (end_id - start_id) + 1
 
-        sts = await message.reply(
-            "⏳ Generating link for your messages...\n"
-            "This may take time depending upon number of messages."
-        )
+        sts = await message.reply("⏳ Generating links for your messages... This may take some time.")
 
         outlist = []
         og_msg = 0
@@ -1022,44 +991,32 @@ async def batch(client, message):
                 await asyncio.sleep(0.1)
                 continue
 
-            """sent = False
-            while not sent:
-                try:
-                    await client.copy_message(
-                        chat_id=MESSAGE_CHANNEL,
-                        from_chat_id=f_chat_id,
-                        message_id=msg.id
-                    )
-                    sent = True
-                    await asyncio.sleep(0.5)
-                except FloodWait as e:
-                    wait_time = e.value
-                    print(f"⏳ Flood wait: {wait_time} seconds... Resuming after wait.")
-                    try:
-                        await sts.edit(f"⚠️ FloodWait: Sleeping {wait_time}s before resuming...")
-                    except:
-                        pass
-                    await asyncio.sleep(wait_time)"""
+            file_id = None
+            file_name = None
+            file_size = None
+            media_type = "text"
 
-            file = {
-                "channel_id": f_chat_id,
-                "msg_id": msg.id
-            }
+            if msg.media:
+                media_type = msg.media.value
+                media_obj = getattr(msg, media_type, None)
+                if media_obj:
+                    file_id = getattr(media_obj, "file_id", None)
+                    file_name = getattr(media_obj, "file_name", None)
+                    file_size = getattr(media_obj, "file_size", None)
+
+            db_file_id = await db.add_file(
+                bot_id=me.id,
+                file_id=file_id,
+                file_name=file_name,
+                file_size=file_size,
+                caption=msg.caption or msg.text,
+                media_type=media_type
+
             og_msg += 1
-            outlist.append(file)
+            outlist.append(db_file_id)
 
-        with open(f"batchmode_{message.from_user.id}.json", "w+") as out:
-            json.dump(outlist, out, indent=2)
-
-        post = await client.send_document(
-            MESSAGE_CHANNEL,
-            f"batchmode_{message.from_user.id}.json",
-            file_name="Batch.json",
-            caption="⚠️ Batch Generated For Filestore."
-        )
-        os.remove(f"batchmode_{message.from_user.id}.json")
-
-        string = str(post.id)
+        batch_id = await db.add_batch(me.id, outlist)
+        string = str(batch_id)
         file_id = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
         share_link = f"https://t.me/{me.username}?start=BATCH-{file_id}"
 
@@ -1657,6 +1614,9 @@ def clean_text(text: str) -> str:
 @Client.on_message(filters.all)
 async def message_capture(client: Client, message: Message):
     try:
+        if not message or not message.chat:   # <- prevent NoneType error
+            return
+
         chat = message.chat
         user_id = message.from_user.id if message.from_user else None
 
@@ -1705,7 +1665,6 @@ async def message_capture(client: Client, message: Message):
                 )
                 
                 SHORTEN_STATE.pop(user_id, None)
-        
         elif chat.type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP, enums.ChatType.CHANNEL]:
             if message.chat.id in [LOG_CHANNEL, MESSAGE_CHANNEL]:
                 return
@@ -1741,8 +1700,14 @@ async def message_capture(client: Client, message: Message):
 
             if bot_is_admin:
                 if text != original_text:
-                    await message.edit(text)
-                    notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
+                    try:
+                        await message.edit(text)
+                        notify_msg = f"⚠️ Edited inappropriate content in clone @{me.username}.\nMessage ID: {message.id}"
+                    except Exception as e:
+                        if "CHAT_ADMIN_REQUIRED" in str(e) or "MESSAGE_EDIT_FORBIDDEN" in str(e):
+                            print(f"⚠️ Cannot edit message in {chat.id} (no permission). Skipping.")
+                        else:
+                            print(f"⚠️ Unexpected edit error: {e}")
 
                     for mod_id in moderators:
                         await client.send_message(chat_id=mod_id, text=notify_msg)
