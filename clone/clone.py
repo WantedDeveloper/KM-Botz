@@ -343,7 +343,7 @@ async def start(client, message):
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
-        auto_delete_time = str(clone.get("auto_delete_time", "1h"))
+        auto_delete_time = clone.get("auto_delete_time", "1h")
         auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
         forward_protect = clone.get("forward_protect", False)
 
