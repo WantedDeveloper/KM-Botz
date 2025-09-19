@@ -311,17 +311,11 @@ class Database:
         except:
             return None
 
-    async def add_batch(self, bot_id, file_ids: list):
-        data = {
-            "bot_id": int(bot_id),
-            "file_ids": file_ids,
-            "date": datetime.utcnow()
-        }
-        result = await self.batches.insert_one(data)
-        return str(result.inserted_id)
-
-    async def get_batch(self, batch_id):
-        return await self.batches.find_one({"_id": ObjectId(batch_id)})
+    async def get_file_by_file_id(self, file_id: str, bot_id: int = None):
+        query = {"file_id": file_id}
+        if bot_id:
+            query["bot_id"] = int(bot_id)
+        return await self.media.find_one(query)
 
     async def get_all_clone_media(self, bot_id: int):
         return self.media.find({"bot_id": bot_id})
@@ -343,6 +337,19 @@ class Database:
             {"$set": {"posted": False}}
         )
         return result.modified_count
+
+    # ---------------- BATCH ----------------
+    async def add_batch(self, bot_id, file_ids: list):
+        data = {
+            "bot_id": int(bot_id),
+            "file_ids": file_ids,
+            "date": datetime.utcnow()
+        }
+        result = await self.batches.insert_one(data)
+        return str(result.inserted_id)
+
+    async def get_batch(self, batch_id):
+        return await self.batches.find_one({"_id": ObjectId(batch_id)})
 
 db = Database(DB_URI, DB_NAME)
 
