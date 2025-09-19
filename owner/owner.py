@@ -2364,11 +2364,16 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
                 current = clone.get("auto_delete", False)
-                time_set = clone.get("auto_delete_time", 1)
-                msg_set = clone.get("auto_delete_msg", script.AD_TXT)
+                time_set = str(clone.get("auto_delete_time", "1h"))
+                msg_set = str(clone.get("auto_delete_msg", script.AD_TXT))
 
-                number = "".join(filter(str.isdigit, time_set)) or "0"
+                num_str = "".join(filter(str.isdigit, time_set)) or "0"
                 unit_char = "".join(filter(str.isalpha, time_set)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
 
                 unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
                 unit = unit_map.get(unit_char.lower(), "hour(s)")
@@ -2379,7 +2384,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
+                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{number}', unit=f'{unit}')}"
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
