@@ -2065,6 +2065,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     )
 
                 await show_post_menu(client, query.message, bot_id)
+                await db.update_clone(bot_id, {"auto_post_sleep": 1})
 
             # Auto Post Status
             elif action == "ap_status":
