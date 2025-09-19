@@ -463,6 +463,10 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
+                encoded = data.replace("AUTO-", "", 1)
+                decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii").strip()
+                pre, file_id = decoded.split("_", 1)
+
                 if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
@@ -480,9 +484,6 @@ async def start(client, message):
                         protect_content=forward_protect,
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
-
-                file_id = data.split("-", 1)[1]
-                decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
 
                 batch = await db.get_batch(decode_file_id)
                 if not batch:
@@ -528,12 +529,16 @@ async def start(client, message):
                         if not f_caption.strip():
                             f_caption = "None"
 
-                        sent_msg = await client.send_cached_media(
-                            chat_id=message.from_user.id,
-                            file_id=file_id,
-                            caption=f_caption,
-                            protect_content=forward_protect
-                        )
+                        sent_msg = None
+                        if file_id:
+                            sent_msg = await client.send_cached_media(
+                                chat_id=message.from_user.id,
+                                file_id=file_id,
+                                caption=f_caption,
+                                protect_content=forward_protect
+                            )
+                        else:
+                            sent_msg = await message.reply_text(f_caption, protect_content=forward_protect)
 
                         buttons = []
                         for btn in buttons_data:
@@ -758,8 +763,8 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                unpack, _ = unpack_new_file_id(file_id)
-                string = f"file_{unpack}"
+                db_file_id = str(item["_id"])
+                string = f"file_{db_file_id}"
                 outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
                 bot_username = (await clone_client.get_me()).username
                 share_link = f"https://t.me/{bot_username}?start=AUTO-{outstr}"
