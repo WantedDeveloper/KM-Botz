@@ -10,7 +10,7 @@ from pyrogram.file_id import FileId
 from struct import pack
 from plugins.config import *
 from plugins.database import db, clonedb
-from plugins.clone_instance import get_client, parse_time
+from plugins.clone_instance import get_client
 from plugins.script import script
 
 logger = logging.getLogger(__name__)
@@ -146,8 +146,8 @@ async def verify_user(client, userid, token):
     if not clone:
         return
 
-    validity_hours = parse_time(clone.get("access_token_validity", "24h"))
-    VERIFIED[userid] = datetime.now() + timedelta(seconds=validity_hours)
+    validity_hours = clone.get("access_token_validity", 24)
+    VERIFIED[userid] = datetime.now() + timedelta(hours=validity_hours)
 
 async def check_verification(client, userid):
     userid = int(userid)
@@ -170,7 +170,7 @@ def get_size(size):
 
 async def auto_delete_message(client, msg_to_delete, notice_msg, hours):
     try:
-        await asyncio.sleep(hours)
+        await asyncio.sleep(hours * 3600)
 
         try:
             await msg_to_delete.delete()
@@ -343,20 +343,9 @@ async def start(client, message):
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
-        auto_delete_time = str(clone.get("auto_delete_time", "1h"))
-        auto_delete_msg = str(clone.get('auto_delete_msg', script.AD_TXT))
+        auto_delete_time = clone.get("auto_delete_time", 1)
+        auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
         forward_protect = clone.get("forward_protect", False)
-
-        num_str = "".join(filter(str.isdigit, auto_delete_time)) or "0"
-        unit_char = "".join(filter(str.isalpha, auto_delete_time)) or "h"
-
-        try:
-            number = int(num_str)
-        except:
-            number = 0
-
-        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
-        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         data = message.command[1]
         try:
@@ -457,7 +446,7 @@ async def start(client, message):
 
                 if sent_msg and auto_delete:
                     notice = await sent_msg.reply(
-                    auto_delete_msg.format(time=number, unit=unit),
+                    auto_delete_msg.format(time=auto_delete_time),
                     quote=True
                 )
                 asyncio.create_task(auto_delete_message(client, sent_msg, notice, auto_delete_time))
@@ -579,7 +568,7 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await message.reply(
-                        auto_delete_msg.format(time=number, unit=unit),
+                        auto_delete_msg.format(time=auto_delete_time),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, sent_files, k, auto_delete_time))
@@ -660,7 +649,7 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await msg.reply(
-                        auto_delete_msg.format(time=number, unit=unit),
+                        auto_delete_msg.format(time=auto_delete_time),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time))
@@ -800,7 +789,8 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
+                hours = int(fresh.get("auto_post_time", 1))
+                sleep_time = hours * 3600
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
@@ -889,7 +879,8 @@ async def auto_post_x(bot_id: int, db, target_channel: int):
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
+                hours = int(fresh.get("auto_post_time", 1))
+                sleep_time = hours * 3600
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
@@ -979,7 +970,8 @@ async def auto_post_y(bot_id: int, db, target_channel: int):
                 for it in items:
                     await db.mark_media_posted(bot_id, it["file_id"])
 
-                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
+                hours = int(fresh.get("auto_post_time", 1))
+                sleep_time = hours * 3600
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and items:
