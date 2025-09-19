@@ -2364,7 +2364,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
                 current = clone.get("auto_delete", False)
-                time_set = clone.get("auto_delete_time", "1h")
+                time_set = clone.get("auto_delete_time", 1)
                 msg_set = clone.get("auto_delete_msg", script.AD_TXT)
 
                 number = "".join(filter(str.isdigit, time_set)) or "0"
