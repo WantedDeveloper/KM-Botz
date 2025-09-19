@@ -838,7 +838,18 @@ async def show_post_menu(client, message, bot_id):
         clone = await db.get_clone_by_id(bot_id)
         current = clone.get("auto_post", False)
         image = clone.get("auto_post_image", None)
-        sleep = clone.get("auto_post_sleep", "1h")
+        sleep = str(clone.get("auto_post_sleep", "1h"))
+
+        num_str = "".join(filter(str.isdigit, sleep)) or "0"
+        unit_char = "".join(filter(str.isalpha, sleep)) or "h"
+
+        try:
+            number = int(num_str)
+        except:
+            number = 0
+
+        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         if current:
             buttons = [
@@ -849,7 +860,7 @@ async def show_post_menu(client, message, bot_id):
 
             status = (
                 f"🟢 Enabled\n\n"
-                f"⏱ Sleep: {sleep} hour\n\n"
+                f"⏱ Sleep: {number} {unit}\n\n"
             )
         else:
             buttons = []
@@ -1959,10 +1970,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                at_validity = clone.get("access_token_validity", "24h")
+                at_validity = str(clone.get("access_token_validity", "24h"))
 
-                number = "".join(filter(str.isdigit, at_validity)) or "0"
+                num_str = "".join(filter(str.isdigit, at_validity)) or "0"
                 unit_char = "".join(filter(str.isalpha, at_validity)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
 
                 unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
                 unit = unit_map.get(unit_char.lower(), "hour(s)")
@@ -2384,7 +2400,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{number}', unit=f'{unit}')}"
+                    status = f"🟢 Enabled\n\n⏱ Time: {number} {unit}\n\n📝 Message: {msg_set.format(time=f'{number}', unit=f'{unit}')}"
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
