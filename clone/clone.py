@@ -462,7 +462,6 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
-                print("🚀 Start param:", data)
                 if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
@@ -483,15 +482,12 @@ async def start(client, message):
 
                 file_id = data.split("-", 1)[1]
                 decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
-                print("🔎 Decoded batch_id:", decode_file_id)
 
                 batch = await db.get_batch(decode_file_id)
-                print("🔎 Batch data:", batch)
                 if not batch:
                     return await message.reply("⚠️ Batch not found or expired.")
 
                 file_ids = batch.get("file_ids", [])
-                print("🔎 File IDs:", file_ids)
                 total_files = len(file_ids)
                 if not total_files:
                     return await message.reply("⚠️ No files in this batch.")
@@ -850,7 +846,7 @@ async def link(client, message):
 
         if g_msg.media:
             media_type = g_msg.media.value
-            media_obj = getattr(msg, media_type, None)
+            media_obj = getattr(g_msg, media_type, None)
             if media_obj:
                 file_id = getattr(media_obj, "file_id", None)
                 file_name = getattr(media_obj, "file_name", None)
