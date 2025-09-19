@@ -14,6 +14,7 @@ class Database:
         self.bot = self.db.clone_bots
         self.settings = self.db.bot_settings
         self.media = self.db.media_files
+        self.batches = db.batches
 
     # ---------------- USERS ----------------
     def new_user(self, id, name):
@@ -245,25 +246,6 @@ class Database:
         return clone.get("banned_users", []) if clone else []
 
     # ---------------- MEDIA ----------------
-    async def add_file(self, bot_id, file_id, file_name=None, file_size=None, caption=None, media_type="text"):
-        data = {
-            "bot_id": int(bot_id),
-            "file_id": file_id,
-            "file_name": file_name,
-            "file_size": file_size,
-            "caption": caption,
-            "media_type": media_type,
-            "date": datetime.utcnow()
-        }
-        result = await self.media.insert_one(data)
-        return result.inserted_id
-
-    async def get_file(self, db_file_id):
-        try:
-            return await self.media.find_one({"_id": ObjectId(db_file_id)})
-        except:
-            return None
-
     async def add_media(self, bot_id: int, file_id: str, caption: str, media_type: str, date):
         await self.media.update_one(
             {"bot_id": bot_id, "file_id": file_id},
@@ -309,6 +291,37 @@ class Database:
             {"bot_id": bot_id, "file_id": file_id},
             {"$set": {"posted": False}}
         )
+
+    async def add_file(self, bot_id, file_id, file_name=None, file_size=None, caption=None, media_type="text"):
+        data = {
+            "bot_id": int(bot_id),
+            "file_id": file_id,
+            "file_name": file_name,
+            "file_size": file_size,
+            "caption": caption,
+            "media_type": media_type,
+            "date": datetime.utcnow()
+        }
+        result = await self.media.insert_one(data)
+        return result.inserted_id
+
+    async def get_file(self, db_file_id):
+        try:
+            return await self.media.find_one({"_id": ObjectId(db_file_id)})
+        except:
+            return None
+
+    async def add_batch(self, bot_id, file_ids: list):
+        data = {
+            "bot_id": int(bot_id),
+            "file_ids": file_ids,
+            "date": datetime.utcnow()
+        }
+        result = await self.batches.insert_one(data)
+        return str(result.inserted_id)
+
+    async def get_batch(self, batch_id):
+        return await self.batches.find_one({"_id": ObjectId(batch_id)})
 
     async def get_all_clone_media(self, bot_id: int):
         return self.media.find({"bot_id": bot_id})
