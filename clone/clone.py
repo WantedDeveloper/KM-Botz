@@ -1011,6 +1011,7 @@ async def batch(client, message):
                 file_size=file_size,
                 caption=msg.caption or msg.text,
                 media_type=media_type
+            )
 
             og_msg += 1
             outlist.append(db_file_id)
