@@ -411,6 +411,7 @@ async def start(client, message):
                 if file_size and isinstance(file_size, int):
                     await db.add_storage_used(me.id, file_size)
 
+                f_caption = original_caption
                 if caption:
                     try:
                         f_caption = caption.format(
