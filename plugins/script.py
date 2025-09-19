@@ -340,7 +340,7 @@ Customize the warning message shown to users before their messages are auto-dele
 
     AD_TXT = """<u>⚠️ IMPORTANT</u>
 
-All messages will be deleted after {time} {unit}.  
+All messages will be deleted after {time} hour(s).  
 Please save or forward them to your personal saved messages to avoid losing them!"""
 
     FORWARD_TXT = """<u>**✨ FORWARD PROTECTION**</u>
