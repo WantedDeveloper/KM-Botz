@@ -2065,8 +2065,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     )
 
                 await show_post_menu(client, query.message, bot_id)
-                await db.update_clone(bot_id, {"auto_delete_msg": script.AD_TXT})
-                await db.update_clone(bot_id, {"auto_delete_time": 1})
 
             # Auto Post Status
             elif action == "ap_status":
