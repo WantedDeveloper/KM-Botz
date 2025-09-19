@@ -160,20 +160,20 @@ class Database:
                 'access_token': False,
                 'shorten_link': None,
                 'shorten_api': None,
-                'access_token_validity': '24h',
+                'access_token_validity': 24,
                 'access_token_renew_log': {},
                 'access_token_tutorial': None,
                 # Auto Post
                 'auto_post': False,
                 'auto_post_channel': None,
                 'auto_post_image': None,
-                'auto_post_sleep': '1h',
+                'auto_post_sleep': 1,
                 # Premium User
                 'premium_upi': None,
                 'premium_user': [],
                 # Auto Delete
                 'auto_delete': False,
-                'auto_delete_time': '1h',
+                'auto_delete_time': 1,
                 'auto_delete_msg': script.AD_TXT,
                 # Forward Protect
                 'forward_protect': False,

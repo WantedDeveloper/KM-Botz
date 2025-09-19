@@ -307,7 +307,15 @@ When enabled, the bot will automatically send posts at the configured interval.
 
 Current Status: {status}"""
 
-    AP_SLEEP_TXT = """<u>**✨ AUTO POST DELAY**</u>
+    AP_IMG_TXT = """<u>**✨ AUTO POST IMAGE**</u>
+
+Include a photo to be displayed along with your auto post."""
+
+    EDIT_AP_IMG = """🖼️ Please upload the new auto post image you would like to use.
+
+ℹ️ This image will be shown in your auto post."""
+
+    AP_SLEEP_TXT = """<u>**✨ AUTO POST SLEEP**</u>
 
 You can customize the waiting time (sleep) between one auto post and the next.
 This controls how long the bot waits before sending another auto post to users."""
@@ -332,7 +340,7 @@ Customize the warning message shown to users before their messages are auto-dele
 
     AD_TXT = """<u>⚠️ IMPORTANT</u>
 
-All messages will be deleted after {time} hour(s).  
+All messages will be deleted after {time} {unit}.  
 Please save or forward them to your personal saved messages to avoid losing them!"""
 
     FORWARD_TXT = """<u>**✨ FORWARD PROTECTION**</u>

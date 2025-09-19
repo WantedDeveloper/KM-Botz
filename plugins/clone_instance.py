@@ -5,3 +5,25 @@ def set_client(bot_id: int, client):
 
 def get_client(bot_id: int):
     return _clone_clients.get(int(bot_id))
+
+def parse_time(value):
+    """
+    Parse auto_post_time string with optional suffix:
+    - '30s' -> 30 seconds
+    - '10m' -> 600 seconds
+    - '2h'  -> 7200 seconds
+    - '45'  -> 162000 (default hours, 45h)
+    """
+    if not value:
+        return 3600
+
+    value = str(value).strip().lower()
+
+    if value.endswith("s"):
+        return int(value[:-1])
+    elif value.endswith("m"):
+        return int(value[:-1]) * 60
+    elif value.endswith("h"):
+        return int(value[:-1]) * 3600
+    else:
+        return int(value) * 3600
