@@ -354,6 +354,9 @@ async def start(client, message):
             file_id = data
             pre = ""
 
+        file_id = data.split("-", 1)[1]
+        decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
+
         # --- Verification Handler ---
         if data.startswith("VERIFY-"):
             parts = data.split("-", 2)
@@ -376,10 +379,6 @@ async def start(client, message):
         # --- Single File Handler ---
         if data.startswith("SINGLE-"):
             try:
-                encoded = data.replace("SINGLE-", "", 1)
-                decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii")
-                pre, decode_file_id = decoded.split("_", 1)
-
                 if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
@@ -463,9 +462,6 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
-                file_id = data.split("-", 1)[1]
-                decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
-
                 if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                     btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
@@ -588,10 +584,6 @@ async def start(client, message):
 
         # --- Auto Post Handler ---
         if data.startswith("AUTO-"):
-            encoded = data.replace("AUTO-", "", 1)
-            decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii").strip()
-            pre, file_id = decoded.split("_", 1)
-
             if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                 verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
                 btn = [[InlineKeyboardButton("✅ Verify", url=verify_url)]]
@@ -613,7 +605,7 @@ async def start(client, message):
             try:
                 msg = await client.send_cached_media(
                     chat_id=message.from_user.id,
-                    file_id=file_id,
+                    file_id=decode_file_id,
                     protect_content=forward_protect
                 )
 
