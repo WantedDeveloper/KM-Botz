@@ -10,7 +10,7 @@ from pyrogram.file_id import FileId
 from struct import pack
 from plugins.config import *
 from plugins.database import db, clonedb
-from plugins.clone_instance import get_client
+from plugins.clone_instance import get_client, parse_time
 from plugins.script import script
 
 logger = logging.getLogger(__name__)
@@ -94,8 +94,8 @@ async def get_verify_shorted_link(client, link):
     if not clone:
         return link
 
-    shortlink_url = clone.get("shorten_link")
-    shortlink_api = clone.get("shorten_api")
+    shortlink_url = clone.get("shorten_link", None)
+    shortlink_api = clone.get("shorten_api", None)
 
     if shortlink_url and shortlink_api:
         url = f"https://{shortlink_url}/api"
@@ -146,8 +146,8 @@ async def verify_user(client, userid, token):
     if not clone:
         return
 
-    validity_hours = clone.get("access_token_validity", 24)
-    VERIFIED[userid] = datetime.now() + timedelta(hours=validity_hours)
+    validity_hours = parse_time(clone.get("access_token_validity", "24h"))
+    VERIFIED[userid] = datetime.now() + timedelta(seconds=validity_hours)
 
 async def check_verification(client, userid):
     userid = int(userid)
@@ -319,8 +319,8 @@ async def start(client, message):
                 InlineKeyboardButton('🔒 Close', callback_data='close')
             ]]
 
-            start_text = clone.get("wlc") or script.START_TXT
-            start_pic = clone.get("pics") or None
+            start_text = clone.get("wlc", script.START_TXT) 
+            start_pic = clone.get("pics", None)
 
             if start_pic:
                 return await message.reply_photo(
@@ -343,9 +343,15 @@ async def start(client, message):
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
-        auto_delete_time = clone.get("auto_delete_time", 1)
+        auto_delete_time = clone.get("auto_delete_time", "1h")
         auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
         forward_protect = clone.get("forward_protect", False)
+
+        number = "".join(filter(str.isdigit, ad_time)) or "0"
+        unit_char = "".join(filter(str.isalpha, ad_time)) or "h"
+
+        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         data = message.command[1]
         try:
@@ -446,7 +452,7 @@ async def start(client, message):
 
                 if sent_msg and auto_delete:
                     notice = await sent_msg.reply(
-                    auto_delete_msg.format(time=auto_delete_time),
+                    auto_delete_msg.format(time=number, unit=unit),
                     quote=True
                 )
                 asyncio.create_task(auto_delete_message(client, sent_msg, notice, auto_delete_time))
@@ -568,7 +574,7 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await message.reply(
-                        auto_delete_msg.format(time=auto_delete_time),
+                        auto_delete_msg.format(time=number, unit=unit),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, sent_files, k, auto_delete_time))
@@ -649,7 +655,7 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await msg.reply(
-                        auto_delete_msg.format(time=auto_delete_time),
+                        auto_delete_msg.format(time=number, unit=unit),
                         quote=True
                     )
                     asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time))
@@ -737,8 +743,6 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
         if not clone_client:
             return
 
-        FIX_IMAGE = "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg"
-
         while True:
             try:
                 fresh = await db.get_clone_by_id(bot_id)
@@ -768,8 +772,8 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                 bot_username = (await clone_client.get_me()).username
                 share_link = f"https://t.me/{bot_username}?start=AUTO-{outstr}"
 
-                header = fresh.get("header")
-                footer = fresh.get("footer")
+                header = fresh.get("header", None)
+                footer = fresh.get("footer", None)
                 selected_caption = random.choice(script.CAPTION_LIST) if script.CAPTION_LIST else ""
 
                 text = ""
@@ -784,15 +788,14 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 await clone_client.send_photo(
                     chat_id=target_channel,
-                    photo=FIX_IMAGE,
+                    photo=fresh.get("auto_post_image", None) or "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg",
                     caption=text,
                     parse_mode=enums.ParseMode.HTML
                 )
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                hours = int(fresh.get("auto_post_time", 1))
-                sleep_time = hours * 3600
+                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
@@ -829,8 +832,6 @@ async def auto_post_x(bot_id: int, db, target_channel: int):
         if not clone_client:
             return
 
-        FIX_IMAGE = "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg"
-
         while True:
             try:
                 fresh = await db.get_clone_by_id(bot_id)
@@ -860,8 +861,8 @@ async def auto_post_x(bot_id: int, db, target_channel: int):
                 bot_username = (await clone_client.get_me()).username
                 share_link = f"https://t.me/{bot_username}?start=AUTOX-{outstr}"
 
-                header = fresh.get("header")
-                footer = fresh.get("footer")
+                header = fresh.get("header", None)
+                footer = fresh.get("footer", None)
                 selected_caption = random.choice(script.CAPTION_LIST) if script.CAPTION_LIST else ""
 
                 text = ""
@@ -876,15 +877,14 @@ async def auto_post_x(bot_id: int, db, target_channel: int):
 
                 await clone_client.send_photo(
                     chat_id=target_channel,
-                    photo=FIX_IMAGE,
+                    photo=fresh.get("auto_post_image", None) or "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg",
                     caption=text,
                     parse_mode=enums.ParseMode.HTML
                 )
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                hours = int(fresh.get("auto_post_time", 1))
-                sleep_time = hours * 3600
+                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
@@ -921,8 +921,6 @@ async def auto_post_y(bot_id: int, db, target_channel: int):
         if not clone_client:
             return
 
-        FIX_IMAGE = "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg"
-
         while True:
             try:
                 fresh = await db.get_clone_by_id(bot_id)
@@ -952,8 +950,8 @@ async def auto_post_y(bot_id: int, db, target_channel: int):
                 bot_username = (await clone_client.get_me()).username
                 share_link = f"https://t.me/{bot_username}?start=AUTOY-{outstr}"
 
-                header = fresh.get("header")
-                footer = fresh.get("footer")
+                header = fresh.get("header", None)
+                footer = fresh.get("footer", None)
                 selected_caption = random.choice(script.CAPTION_LIST) if script.CAPTION_LIST else ""
 
                 text = ""
@@ -968,7 +966,7 @@ async def auto_post_y(bot_id: int, db, target_channel: int):
 
                 await clone_client.send_photo(
                     chat_id=target_channel,
-                    photo=FIX_IMAGE,
+                    photo=fresh.get("auto_post_image", None) or "https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg",
                     caption=text,
                     parse_mode=enums.ParseMode.HTML
                 )
@@ -976,8 +974,7 @@ async def auto_post_y(bot_id: int, db, target_channel: int):
                 for it in items:
                     await db.mark_media_posted(bot_id, it["file_id"])
 
-                hours = int(fresh.get("auto_post_time", 1))
-                sleep_time = hours * 3600
+                sleep_time = parse_time(fresh.get("auto_post_time", "1h"))
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and items:
@@ -1726,7 +1723,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 [InlineKeyboardButton('🤖 Create Your Own Clone', url=f'https://t.me/{BOT_USERNAME}?start')],
                 [InlineKeyboardButton('🔒 Close', callback_data='close')]
             ]
-            start_text = clone.get("wlc") or script.START_TXT
+            start_text = clone.get("wlc", script.START_TXT)
             await query.message.edit_text(
                 text=start_text.format(user=query.from_user.mention, bot=me.mention),
                 reply_markup=InlineKeyboardMarkup(buttons)
