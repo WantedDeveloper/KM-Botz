@@ -389,7 +389,7 @@ async def start(client, message):
                     if tutorial_url:
                         btn.append([InlineKeyboardButton("ℹ️ Tutorial", url=tutorial_url)])
 
-                    btn.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start=SINGLE-{encoded}")])
+                    btn.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start=SINGLE-{file_id}")])
 
                     return await message.reply_text(
                         "🚫 You are not **verified**! Kindly **verify** to continue.",
@@ -594,7 +594,7 @@ async def start(client, message):
                 if tutorial_url:
                     btn.append([InlineKeyboardButton("ℹ️ Tutorial", url=tutorial_url)])
 
-                btn.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start=AUTO-{encoded}")])
+                btn.append([InlineKeyboardButton("♻️ Try Again", url=f"https://t.me/{me.username}?start=AUTO-{file_id}")])
 
                 return await message.reply_text(
                     "🚫 You are not **verified**! Kindly **verify** to continue.",
