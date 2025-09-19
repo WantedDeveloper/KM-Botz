@@ -343,12 +343,17 @@ async def start(client, message):
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
-        auto_delete_time = clone.get("auto_delete_time", "1h")
-        auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
+        auto_delete_time = str(clone.get("auto_delete_time", "1h"))
+        auto_delete_msg = str(clone.get('auto_delete_msg', script.AD_TXT))
         forward_protect = clone.get("forward_protect", False)
 
-        number = "".join(filter(str.isdigit, auto_delete_time)) or "0"
+        num_str = "".join(filter(str.isdigit, auto_delete_time)) or "0"
         unit_char = "".join(filter(str.isalpha, auto_delete_time)) or "h"
+
+        try:
+            number = int(num_str)
+        except:
+            number = 0
 
         unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
         unit = unit_map.get(unit_char.lower(), "hour(s)")
