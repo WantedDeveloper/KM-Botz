@@ -463,9 +463,8 @@ async def start(client, message):
         # --- Batch File Handler ---
         if data.startswith("BATCH-"):
             try:
-                encoded = data.replace("AUTO-", "", 1)
-                decoded = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode("ascii")
-                pre, file_id = decoded.split("_", 1)
+                file_id = data.split("-", 1)[1]
+                decode_file_id = base64.urlsafe_b64decode(file_id + "=" * (-len(file_id) % 4)).decode("ascii")
 
                 if access_token and message.from_user.id != owner_id and message.from_user.id not in moderators and str(message.from_user.id) not in premium and not await check_verification(client, message.from_user.id):
                     verify_url = await get_token(client, message.from_user.id, f"https://t.me/{me.username}?start=")
