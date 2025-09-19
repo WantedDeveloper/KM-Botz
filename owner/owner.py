@@ -7,7 +7,7 @@ from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait,
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
 from plugins.config import *
 from plugins.database import db, JoinReqs
-from plugins.clone_instance import set_client, get_client
+from plugins.clone_instance import set_client, get_client, parse_time
 from plugins.script import script
 from clone.clone import auto_post_clone
         
@@ -26,6 +26,7 @@ ACCESS_TOKEN = {}
 ACCESS_TOKEN_VALIDITY = {}
 ACCESS_TOKEN_TUTORIAL = {}
 AUTO_POST = {}
+AUTO_POST_IMAGE = {}
 AUTO_POST_SLEEP = {}
 PREMIUM_UPI = {}
 ADD_PREMIUM = {}
@@ -750,7 +751,7 @@ async def show_token_menu(client, message, bot_id):
         current = clone.get("access_token", False)
         shorten_link = clone.get("shorten_link", None)
         shorten_api = clone.get("shorten_api", None)
-        validity = clone.get("access_token_validity", 24)
+        validity = clone.get("access_token_validity", "24h")
         tutorial = clone.get("access_token_tutorial", None)
         renew_log = clone.get("access_token_renew_log", {})
 
@@ -836,11 +837,13 @@ async def show_post_menu(client, message, bot_id):
     try:
         clone = await db.get_clone_by_id(bot_id)
         current = clone.get("auto_post", False)
-        sleep = clone.get("auto_post_sleep", 1)
+        image = clone.get("auto_post_image", None)
+        sleep = clone.get("auto_post_sleep", "1h")
 
         if current:
             buttons = [
-                [InlineKeyboardButton("⏱ Sleep", callback_data=f"ap_sleep_{bot_id}"),
+                [InlineKeyboardButton('🖼️ Image', callback_data=f'apimage_{bot_id}'),
+                InlineKeyboardButton("⏱ Sleep", callback_data=f"ap_sleep_{bot_id}"),
                 InlineKeyboardButton("❌ Disable", callback_data=f"ap_status_{bot_id}")]
             ]
 
@@ -864,6 +867,25 @@ async def show_post_menu(client, message, bot_id):
             f"⚠️ Show Post Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
         )
         print(f"⚠️ Show Post Menu Error: {e}")
+
+async def show_image_menu(client, message, bot_id):
+    try:
+        buttons = [
+            [InlineKeyboardButton('➕ Add', callback_data=f'add_apimage_{bot_id}'),
+            InlineKeyboardButton('👁️ See', callback_data=f'see_apimage_{bot_id}'),
+            InlineKeyboardButton('🗑️ Delete', callback_data=f'delete_apimage_{bot_id}')],
+            [InlineKeyboardButton('⬅️ Back', callback_data=f'auto_post_{bot_id}')]
+        ]
+        await message.edit_text(
+            text=script.AP_IMG_TXT,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+    except Exception as e:
+        await client.send_message(
+            LOG_CHANNEL,
+            f"⚠️ Show Image Menu Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance."
+        )
+        print(f"⚠️ Show Image Menu Error: {e}")
 
 async def show_sleep_menu(client, message, bot_id):
     try:
@@ -1107,7 +1129,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             "link_message_", "word_filter_", "wf_status_", "media_filter_", "mf_status_", "random_caption_", "rc_status_", "header_", "add_header_", "cancel_addheader_", "see_header_", "delete_header_", "footer_", "add_footer_", "cancel_addfooter_", "see_footer_", "delete_footer_",
             "force_subscribe_", "add_fsub_", "fsub_mode_", "cancel_addfsub_", "remove_fsub_",
             "access_token_", "at_status_", "cancel_at_", "at_validty_", "edit_atvalidity_", "cancel_editatvalidity_", "see_atvalidity_", "default_atvalidity_", "at_tutorial_", "add_attutorial_", "cancel_addattutorial_", "see_attutorial_", "delete_attutorial_",
-            "auto_post_", "ap_status_", "cancel_autopost_", "ap_sleep_", "edit_apsleep_", "cancel_editapsleep_", "see_apsleep_", "default_apsleep_",
+            "auto_post_", "ap_status_", "cancel_autopost_", "apimage", "add_apimage_", "cancel_addapimage_", "see_apimage_", "delete_apimage_", "ap_sleep_", "edit_apsleep_", "cancel_editapsleep_", "see_apsleep_", "default_apsleep_",
             "premium_user_", "cancel_pu_", "add_pu_", "cancel_addpu_", "remove_premium_user_", "remove_pu_",
             "auto_delete_", "ad_status_", "ad_time_", "edit_adtime_", "cancel_editadtime_", "see_adtime_", "default_adtime_", "ad_message_", "edit_admessage_", "cancel_editadmessage_", "see_admessage_", "default_admessage_",
             "forward_protect_", "fp_status_",
@@ -1937,9 +1959,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                at_validity = clone.get("access_token_validity", 24)
-                unit = "hour" if at_validity == 24 else "hours"
-                await query.answer(f"📝 Current Access Token Validity:\n\n{at_validity} {unit}", show_alert=True)
+                at_validity = clone.get("access_token_validity", "24h")
+
+                number = "".join(filter(str.isdigit, at_validity)) or "0"
+                unit_char = "".join(filter(str.isalpha, at_validity)) or "h"
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Access Token Validity:\n\n{number} {unit}", show_alert=True)
 
             # Default Access Token Validity
             elif action == "default_atvalidity":
@@ -1949,7 +1977,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"access_token_validity": 24})
+                await db.update_clone(bot_id, {"access_token_validity": "24h"})
                 await query.answer(f"🔄 Access token validity reset to default.", show_alert=True)
 
             # Access Token Tutorial
@@ -2061,7 +2089,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     text = "❌ Cancel"
                     callback = f"cancel_autopost_{bot_id}"
                 else:
-                    await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     status_text = "🔴 Auto Post has been successfully DISABLED!"
                     text = "⬅️ Back"
                     callback = f"auto_post_{bot_id}"
@@ -2083,6 +2111,75 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_POST.pop(user_id, None)
                 await db.update_clone(bot_id, {"auto_post": False})
                 await show_post_menu(client, query.message, bot_id)
+
+            # Auto Post Image Menu
+            elif action == "apimage":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                await show_image_menu(client, query.message, bot_id)
+        
+            # Add Auto Post Image
+            elif action == "add_apimage":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                AUTO_POST_IMAGE[user_id] = (query.message, bot_id)
+                buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_addphoto_{bot_id}')]]
+                await query.message.edit_text(
+                    text=script.EDIT_AP_IMG,
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+
+            # Cancel Add Auto Post Image
+            elif action == "cancel_addapimage":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                AUTO_POST_IMAGE.pop(user_id, None)
+                await show_image_menu(client, query.message, bot_id)
+        
+            # See Auto Post Image
+            elif action == "see_apimage":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                auto_post_image = clone.get("auto_post_image", None)
+                if auto_post_image:
+                    await client.send_photo(
+                        chat_id=query.message.chat.id,
+                        photo=auto_post_image,
+                        caption="📌 This is the current auto post image for this clone."
+                    )
+                else:
+                    await query.answer("❌ No auto post image set for this clone.", show_alert=True)
+
+            # Delete Auto Post Image
+            elif action == "delete_apimage":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                auto_post_image = clone.get("auto_post_image", None)
+                if auto_post_image:
+                    await db.update_clone(bot_id, {"auto_post_image": None})
+                    await query.answer("✨ Successfully deleted your clone auto post image.", show_alert=True)
+                else:
+                    await query.answer("❌ No auto post image set for this clone.", show_alert=True)
 
             # Auto Post Sleep Menu
             elif action == "ap_sleep":
@@ -2128,9 +2225,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ap_sleep = clone.get("auto_post_sleep", 1)
-                unit = "hour" if ap_sleep == 1 else "hours"
-                await query.answer(f"📝 Current Auto Post Sleep:\n\n{ap_sleep} {unit}", show_alert=True)
+                ap_sleep = clone.get("auto_post_sleep", "1h")
+
+                number = "".join(filter(str.isdigit, ap_sleep)) or "0"
+                unit_char = "".join(filter(str.isalpha, ap_sleep)) or "h"
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Auto Post Sleep:\n\n{number} {unit}", show_alert=True)
 
             # Default Auto Post Sleep
             elif action == "default_apsleep":
@@ -2140,7 +2243,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_post_sleep": 1})
+                await db.update_clone(bot_id, {"auto_post_sleep": "1h"})
                 await query.answer(f"🔄 Auto post sleep reset to default.", show_alert=True)
 
             # Premium User
@@ -2261,8 +2364,14 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
                 current = clone.get("auto_delete", False)
-                time_set = clone.get("auto_delete_time", 1)
+                time_set = clone.get("auto_delete_time", "1h")
                 msg_set = clone.get("auto_delete_msg", script.AD_TXT)
+
+                number = "".join(filter(str.isdigit, time_set)) or "0"
+                unit_char = "".join(filter(str.isalpha, time_set)) or "h"
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
 
                 if current:
                     buttons = [
@@ -2270,7 +2379,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
+                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{number}', unit=f'{unit}')}"
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
@@ -2347,9 +2456,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ad_time = clone.get("auto_delete_time", 1)
-                unit = "hour" if ad_time == 1 else "hours"
-                await query.answer(f"📝 Current Auto Delete Time:\n\n{ad_time} {unit}", show_alert=True)
+                ad_time = clone.get("auto_delete_time", "1h")
+
+                number = "".join(filter(str.isdigit, ad_time)) or "0"
+                unit_char = "".join(filter(str.isalpha, ad_time)) or "h"
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Auto Delete Time:\n\n{number} {unit}", show_alert=True)
 
             # Default Auto Delete Time
             elif action == "default_adtime":
@@ -2359,7 +2474,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_delete_time": 1})
+                await db.update_clone(bot_id, {"auto_delete_time": "1h"})
                 await query.answer(f"🔄 Auto delete time reset to default.", show_alert=True)
 
             # Auto Delete Message Menu
@@ -2960,6 +3075,7 @@ async def message_capture(client: Client, message: Message):
                 or user_id in ACCESS_TOKEN_VALIDITY
                 or user_id in ACCESS_TOKEN_TUTORIAL
                 or user_id in AUTO_POST
+                or user_id in AUTO_POST_IMAGE
                 or user_id in AUTO_POST_SLEEP
                 or user_id in PREMIUM_UPI
                 or user_id in ADD_PREMIUM
@@ -3072,6 +3188,7 @@ async def message_capture(client: Client, message: Message):
                 ("FOOTER_TEXT", FOOTER_TEXT, "text", "footer", "show_footer_menu"),
                 ("ACCESS_TOKEN_VALIDITY", ACCESS_TOKEN_VALIDITY, "text", "access_token_validity", "show_validity_menu"),
                 ("ACCESS_TOKEN_TUTORIAL", ACCESS_TOKEN_TUTORIAL, "text", "access_token_tutorial", "show_tutorial_menu"),
+                ("AUTO_POST_IMAGE", AUTO_POST_IMAGE, "photo", "auto_post_image", "show_image_menu"),
                 ("AUTO_POST_SLEEP", AUTO_POST_SLEEP, "text", "auto_post_sleep", "show_sleep_menu"),
                 ("PREMIUM_UPI", PREMIUM_UPI, "text", "premium_upi", "show_premium_menu"),
                 ("ADD_PREMIUM", ADD_PREMIUM, "text", "premium_user", "show_premium_menu"),
@@ -3107,17 +3224,14 @@ async def message_capture(client: Client, message: Message):
                         try:
                             storage_dir = "storage"
                             os.makedirs(storage_dir, exist_ok=True)
-                            content = os.path.join(storage_dir, f"{bot_id}_start.jpg")
-                        
+                            content = os.path.join(storage_dir, f"{bot_id}_photo.jpg")
                             main_photo_file_id = message.photo.file_id
                             temp_file = await client.download_media(main_photo_file_id)
-
                             if os.path.exists(content):
                                 os.remove(content)
-
                             shutil.move(temp_file, content)
                         except Exception as e:
-                            await orig_msg.edit_text(f"❌ Failed to save start photo: {e}")
+                            await orig_msg.edit_text(f"❌ Failed to save photo: {e}")
                             await asyncio.sleep(2)
                             await globals()[menu_func](client, orig_msg, bot_id)
                             handler_dict.pop(user_id, None)
@@ -3134,8 +3248,6 @@ async def message_capture(client: Client, message: Message):
                             moderators = clone.get("moderators", [])
                             moderators.append(content)
                             await db.update_clone(bot_id, {db_field: moderators})
-                        elif db_field in ["access_token_validity", "auto_post_sleep", "auto_delete_time"]:
-                            await db.update_clone(bot_id, {db_field: int(content)})
                         else:
                             await db.update_clone(bot_id, {db_field: content})
 
@@ -3356,7 +3468,7 @@ async def message_capture(client: Client, message: Message):
 
                 clone_client = get_client(bot_id)
                 if not clone_client:
-                    await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     await orig_msg.edit_text("❌ Clone bot not running, please restart it.")
                     await asyncio.sleep(2)
                     await show_post_menu(client, orig_msg, bot_id)
@@ -3368,7 +3480,7 @@ async def message_capture(client: Client, message: Message):
                     ch_name = chat.title or "Unknown"
                     ch_link = f"https://t.me/{chat.username}" if chat.username else None
                 except Exception as e:
-                    await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     await orig_msg.edit_text(f"❌ Failed to get channel info: {e}")
                     await asyncio.sleep(2)
                     await show_post_menu(client, orig_msg, bot_id)
@@ -3379,14 +3491,14 @@ async def message_capture(client: Client, message: Message):
                     me = await clone_client.get_me()
                     member = await clone_client.get_chat_member(chat.id, me.id)
                     if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-                        await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                        await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                         await orig_msg.edit_text("❌ The clone bot is NOT an admin in this channel. Add it as admin first.")
                         await asyncio.sleep(2)
                         await show_post_menu(client, orig_msg, bot_id)
                         AUTO_POST.pop(user_id, None)
                         return
                 except Exception as e:
-                    await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     await orig_msg.edit_text(f"❌ Failed to check clone bot in channel: {e}")
                     await asyncio.sleep(2)
                     await show_post_menu(client, orig_msg, bot_id)
@@ -3397,7 +3509,7 @@ async def message_capture(client: Client, message: Message):
                 try:
                     await db.update_clone(bot_id, {
                         "auto_post": True,
-                        "target_channel": int(chat.id)
+                        "auto_post_channel": int(chat.id)
                     })
                     asyncio.create_task(auto_post_clone(bot_id, db, int(chat.id)))
                     await orig_msg.edit_text("✅ Successfully updated **auto post**!")
@@ -3405,7 +3517,7 @@ async def message_capture(client: Client, message: Message):
                     await show_post_menu(client, orig_msg, bot_id)
                     AUTO_POST.pop(user_id, None)
                 except Exception as e:
-                    await db.update_clone(bot_id, {"auto_post": False, "target_channel": None})
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     await client.send_message(LOG_CHANNEL, f"⚠️ Update Auto Post Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
                     await orig_msg.edit_text(f"❌ Failed to update **auto post**: {e}")
                     await asyncio.sleep(2)
@@ -3439,10 +3551,10 @@ async def restart_bots():
 
             fresh = await db.get_clone_by_id(bot.id)
             if fresh and fresh.get("auto_post", False):
-                target_channel = fresh.get("target_channel")
-                if target_channel:
+                auto_post_channel = fresh.get("auto_post_channel", None)
+                if auto_post_channel:
                     asyncio.create_task(
-                        auto_post_clone(bot.id, db, target_channel)
+                        auto_post_clone(bot.id, db, auto_post_channel)
                     )
                     print(f"▶️ Auto-post started for @{bot.username}")
         except Exception as e:
