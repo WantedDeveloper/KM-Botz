@@ -714,6 +714,9 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
         if not clone_client:
             return
 
+        item = None
+        items = []
+
         while True:
             try:
                 fresh = await db.get_clone_by_id(bot_id)
@@ -748,7 +751,6 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 elif mode == "batch":
                     batch_size = random.randint(15, 150)
-                    items = []
                     for _ in range(batch_size):
                         item = await db.pop_random_unposted_media(bot_id)
                         if item:
@@ -776,11 +778,17 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                 if header:
                     text += f"<blockquote>{header}</blockquote>\n\n"
 
-                if random_caption:
-                    text += f"📦 Batch contains {len(items)} items.\n\n{selected_caption}\n\n<blockquote>🔗 Here is your link:\n{share_link}</blockquote>"
-                else:
-                    text += f"📦 Batch contains {len(items)} items.\n\n🔗 Here is your link:\n{share_link}"
-                
+                if mode == "single":
+                    if random_caption:
+                        text += f"{selected_caption}\n\n<blockquote>🔗 Here is your link:\n{share_link}</blockquote>"
+                    else:
+                        text += f"🔗 Here is your link:\n{share_link}"
+                elif mode == "batch":
+                    if random_caption:
+                        text += f"📦 Batch contains {len(items)} items.\n\n{selected_caption}\n\n<blockquote>🔗 Here is your link:\n{share_link}</blockquote>"
+                    else:
+                        text += f"📦 Batch contains {len(items)} items.\n\n🔗 Here is your link:\n{share_link}"
+
                 if footer:
                     text += f"\n\n<blockquote>{footer}</blockquote>"
 
