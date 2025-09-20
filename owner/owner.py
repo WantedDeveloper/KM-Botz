@@ -1190,10 +1190,13 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 action = "remove_fsub"
                 index = int(index)
             elif data.startswith("ap_mode_"):
-                mode, bot_id, chat_id = data[len("ap_mode_"):].rsplit("_", 1)
-                if mode not in ["single", "batch"]:
-                    mode = "single"
-                chat_id = int(chat_id)
+                mode_bot, chat_id_str = data[len("ap_mode_"):].rsplit("_", 1)
+                chat_id = int(chat_id_str)
+
+                parts = mode_bot.split("_")
+                mode = parts[0]
+                bot_id = parts[1]
+
                 action = "ap_mode"
             else:
                 action, bot_id = data.rsplit("_", 1)
@@ -2161,7 +2164,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     await db.update_clone(bot_id, {
                         "auto_post": True,
                         "auto_post_channel": int(chat.id),
-                        "auto_post_mode": "batch"
+                        "auto_post_mode": mode
                     })
                     asyncio.create_task(auto_post_clone(bot_id, db, int(chat.id)))
                     await query.message.edit_text("✅ Successfully updated **auto post**!")
@@ -3600,7 +3603,7 @@ async def message_capture(client: Client, message: Message):
                         InlineKeyboardButton("📌 Single Mode", callback_data=f"ap_mode_single_{bot_id}_{chat.id}"),
                         InlineKeyboardButton("📂 Batch Mode", callback_data=f"ap_mode_batch_{bot_id}_{chat.id}")
                     ],
-                    [InlineKeyboardButton("⬅️ Back", callback_data=f"manage_{bot_id}")]
+                    [InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_autopost_{bot_id}")]
                 ]
 
                 await orig_msg.edit_text(
