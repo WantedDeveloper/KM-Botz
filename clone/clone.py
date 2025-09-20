@@ -6,8 +6,6 @@ from pyrogram import Client, filters, enums
 from pyrogram.types import *
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid, ChatAdminRequired
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
-from pyrogram.file_id import FileId
-from struct import pack
 from plugins.config import *
 from plugins.database import db, clonedb
 from plugins.clone_instance import get_client, parse_time
@@ -207,8 +205,6 @@ async def start(client, message):
         clone = await db.get_bot(me.id)
         if not clone:
             return
-
-        await db.update_clone(me.id, {"auto_delete_time": "1h"})
 
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
@@ -500,7 +496,7 @@ async def start(client, message):
 
                 batch = await db.get_batch(decode_file_id)
                 if not batch:
-                    return await message.reply("⚠️ Batch not found or expired.")
+                    continue
 
                 file_ids = batch.get("file_ids", [])
                 total_files = len(file_ids)
@@ -516,7 +512,7 @@ async def start(client, message):
 
                         file = await db.get_file(db_file_id)
                         if not file:
-                            continue
+                            return await message.reply("❌ File not found in database.")
 
                         file_id = file.get("file_id")
                         file_name = file.get("file_name") or "Media"
@@ -703,39 +699,6 @@ async def help(client, message):
         )
         print(f"⚠️ Clone Help Error: {e}")
 
-def encode_file_id(s: bytes) -> str:
-    r = b""
-    n = 0
-
-    for i in s + bytes([22]) + bytes([4]):
-        if i == 0:
-            n += 1
-        else:
-            if n:
-                r += b"\x00" + bytes([n])
-                n = 0
-
-            r += bytes([i])
-
-    return base64.urlsafe_b64encode(r).decode().rstrip("=")
-
-def encode_file_ref(file_ref: bytes) -> str:
-    return base64.urlsafe_b64encode(file_ref).decode().rstrip("=")
-
-def unpack_new_file_id(new_file_id):
-    decoded = FileId.decode(new_file_id)
-    file_id = encode_file_id(
-        pack(
-            "<iiqq",
-            int(decoded.file_type),
-            decoded.dc_id,
-            decoded.media_id,
-            decoded.access_hash
-        )
-    )
-    file_ref = encode_file_ref(decoded.file_reference)
-    return file_id, file_ref
-
 async def auto_post_clone(bot_id: int, db, target_channel: int):
     try:
         bot_id = int(bot_id)
@@ -761,24 +724,47 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                 if not await db.is_premium(owner_id):
                     return
 
-                item = await db.pop_random_unposted_media(bot_id)
-                if not item:
-                    print(f"⌛ No new media for {bot_id}, sleeping 60s...")
-                    await asyncio.sleep(60)
-                    continue
+                mode = fresh.get("auto_post_mode", "single")
 
-                file_id = item.get("file_id")
-                if not file_id:
+                if mode == "single":
+                    item = await db.pop_random_unposted_media(bot_id)
+                    if not item:
+                        print(f"⌛ No new media for {bot_id}, sleeping 60s...")
+                        await asyncio.sleep(60)
+                        continue
+
+                    file_id = item.get("file_id")
+                    if not file_id:
+                        await db.mark_media_posted(item["_id"], bot_id)
+                        continue
+
                     await db.mark_media_posted(item["_id"], bot_id)
-                    continue
 
-                await db.mark_media_posted(item["_id"], bot_id)
+                    db_file_id = str(item["_id"])
+                    string = f"file_{db_file_id}"
+                    outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
+                    bot_username = (await clone_client.get_me()).username
+                    share_link = f"https://t.me/{bot_username}?start=SINGLE-{outstr}"
 
-                unpack, _ = unpack_new_file_id(file_id)
-                string = f"file_{unpack}"
-                outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
-                bot_username = (await clone_client.get_me()).username
-                share_link = f"https://t.me/{bot_username}?start=AUTO-{outstr}"
+                elif mode == "batch":
+                    batch_size = random.randint(15, 150)
+                    items = []
+                    for _ in range(batch_size):
+                        item = await db.pop_random_unposted_media(bot_id)
+                        if item:
+                            items.append(item)
+
+                    if not items:
+                        print(f"⌛ No new media for {bot_id}, sleeping 60s...")
+                        await asyncio.sleep(60)
+                        continue
+
+                    file_ids = [it["file_id"] for it in items]
+                    batch_id = await db.add_batch(bot_id, file_ids)
+                    string = str(batch_id)
+                    outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
+                    bot_username = (await clone_client.get_me()).username
+                    share_link = f"https://t.me/{bot_username}?start=BATCH-{outstr}"
 
                 header = fresh.get("header", None)
                 footer = fresh.get("footer", None)
@@ -801,13 +787,21 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                     parse_mode=enums.ParseMode.HTML
                 )
 
-                await db.mark_media_posted(item["_id"], bot_id)
+                if mode == "single":
+                    await db.mark_media_posted(bot_id, item["_id"])
+                elif mode == "batch":
+                    for it in items:
+                        await db.mark_media_posted(bot_id, it["file_id"])
 
                 sleep_time = parse_time(fresh.get("auto_post_sleep", "1h"))
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
-                    await db.unmark_media_posted(bot_id, item["file_id"])
+                    if mode == "single":
+                        await db.unmark_media_posted(bot_id, item["file_id"])
+                    elif mode == "batch":
+                        for it in items:
+                            await db.unmark_media_posted(bot_id, it["file_id"])
 
                 print(f"⚠️ Clone Auto-post error for {bot_id}: {e}")
                 try:
@@ -1763,9 +1757,21 @@ async def message_capture(client: Client, message: Message):
                         file_id = message.document.file_id
 
                     if file_id:
-                        await client.send_cached_media(chat_id=message.chat.id, file_id=file_id, caption=new_text, parse_mode=enums.ParseMode.HTML)
+                        await client.send_cached_media(
+                            chat_id=message.chat.id,
+                            file_id=file_id,
+                            caption=new_text if new_text.strip() else None,
+                            parse_mode=enums.ParseMode.HTML
+                        )
                     else:
-                        await client.send_message(chat_id=message.chat.id, text=new_text, parse_mode=enums.ParseMode.HTML)
+                        if not new_text.strip():
+                            print(f"⚠️ Skipping empty message for bot {me.id}")
+                        else:
+                            await client.send_message(
+                                chat_id=message.chat.id,
+                                text=new_text,
+                                parse_mode=enums.ParseMode.HTML
+                            )
             else:
                 for mod_id in moderators:
                     await client.send_message(chat_id=mod_id, text="⚠️ Bot is not admin.")
