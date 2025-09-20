@@ -206,6 +206,8 @@ async def start(client, message):
         if not clone:
             return
 
+        await db.mark_all_batches_auto_post(me.id)
+
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
             await clonedb.add_user(me.id, message.from_user.id)
