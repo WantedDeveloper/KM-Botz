@@ -850,6 +850,7 @@ async def show_post_menu(client, message, bot_id):
         current = clone.get("auto_post", False)
         image = clone.get("auto_post_image", None)
         sleep = str(clone.get("auto_post_sleep", "1h"))
+        mode = clone.get("auto_post_mode", "single")
 
         num_str = "".join(filter(str.isdigit, sleep)) or "0"
         unit_char = "".join(filter(str.isalpha, sleep)) or "h"
@@ -871,7 +872,8 @@ async def show_post_menu(client, message, bot_id):
 
             status = (
                 f"🟢 Enabled\n\n"
-                f"⏱ Sleep: {number} {unit}\n\n"
+                f"⏱ Sleep: {number} {unit}\n"
+                f"⚡ Mode: {mode}\n\n"
             )
         else:
             buttons = []
