@@ -118,7 +118,7 @@ class Database:
                 'auto_post': False,
                 'auto_post_channel': None,
                 'auto_post_image': 'https://i.ibb.co/gFv0Nm8M/IMG-20250904-163513-052.jpg',
-                'auto_post_sleep': 1,
+                'auto_post_sleep': '1h',
                 # Premium User
                 'premium_upi': None,
                 'premium_user': [],
@@ -167,7 +167,7 @@ class Database:
                 'auto_post': False,
                 'auto_post_channel': None,
                 'auto_post_image': None,
-                'auto_post_sleep': 1,
+                'auto_post_sleep': '1h',
                 # Premium User
                 'premium_upi': None,
                 'premium_user': [],
