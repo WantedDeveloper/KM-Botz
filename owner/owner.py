@@ -966,7 +966,6 @@ async def show_premium_menu(client, message, bot_id):
 
         await message.edit_text(text=text, reply_markup=InlineKeyboardMarkup(buttons))
     except Exception as e:
-        print(f"⚠️ Show Premium User Menu Error: {e}")
         await client.send_message(
             LOG_CHANNEL,
             f"⚠️ Show Premium User Menu Error:\n<code>{e}</code>\nClone Data: {clone}\n\nKindly check this message to get assistance."
@@ -2404,15 +2403,18 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 buttons = []
 
                 for pu in premium_user:
-                    try:
-                        user_id_int = int(pu)
-                    except ValueError:
-                        user_id_int = pu
+                    if isinstance(pu, dict):
+                        user_id_int = pu.get("id")
+                        name = pu.get("name", str(user_id_int))
+                    else:
+                        try:
+                            user_id_int = int(pu)
+                        except ValueError:
+                            user_id_int = pu
+                        user = await db.col.find_one({"id": user_id_int})
+                        name = user.get("name") if user else str(user_id_int)
 
-                    user = await db.col.find_one({"id": user_id_int})
-                    name = user.get("name") if user else pu
-
-                    buttons.append([InlineKeyboardButton(f"👤 {name}", callback_data=f"remove_pu_{bot_id}_{pu}")])
+                    buttons.append([InlineKeyboardButton(f"👤 {name}", callback_data=f"remove_pu_{bot_id}_{user_id_int}")])
 
                 buttons.append([InlineKeyboardButton("⬅️ Back", callback_data=f"premium_user_{bot_id}")])
                 await query.message.edit_text(
