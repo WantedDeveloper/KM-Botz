@@ -338,8 +338,7 @@ async def start(client, message):
         buttons_data = clone.get("button", [])
         access_token = clone.get("access_token", False)
         tutorial_url = clone.get("access_token_tutorial", None)
-        auto_post_mode = clone.get("auto_post_mode", "single")
-        premium = clone.get("premium", [])
+        premium = clone.get("premium_user", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
         auto_delete_time = str(clone.get("auto_delete_time", "1h"))
@@ -511,7 +510,7 @@ async def start(client, message):
                     try:
                         await sts.edit_text(f"📤 Sending file {index}/{total_files}...")
 
-                        if auto_post_mode:
+                        if batch.get("is_auto_post"):
                             file = await db.get_file_by_file_id(db_file_id, me.id)
                         else:
                             file = await db.get_file(db_file_id)
@@ -767,7 +766,7 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                         continue
 
                     file_ids = [it["file_id"] for it in items]
-                    batch_id = await db.add_batch(bot_id, file_ids)
+                    batch_id = await db.add_batch(bot_id, file_ids, is_auto_post=True)
                     string = str(batch_id)
                     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
                     bot_username = (await clone_client.get_me()).username
@@ -1650,7 +1649,7 @@ def clean_text(text: str) -> str:
 @Client.on_message(filters.all)
 async def message_capture(client: Client, message: Message):
     try:
-        if not message or not message.chat:   # <- prevent NoneType error
+        if not message or not message.chat:
             return
 
         chat = message.chat
