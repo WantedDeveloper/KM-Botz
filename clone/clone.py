@@ -766,6 +766,7 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                     bot_username = (await clone_client.get_me()).username
                     share_link = f"https://t.me/{bot_username}?start=BATCH-{outstr}"
 
+                random_caption = clone.get("random_caption", False)
                 header = fresh.get("header", None)
                 footer = fresh.get("footer", None)
                 selected_caption = random.choice(script.CAPTION_LIST) if script.CAPTION_LIST else ""
@@ -775,8 +776,11 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                 if header:
                     text += f"<blockquote>{header}</blockquote>\n\n"
 
-                text += f"{selected_caption}\n\n<blockquote>🔗 Here is your link:\n{share_link}</blockquote>"
-
+                if random_caption:
+                    text += f"📦 Batch contains {len(items)} items.\n\n{selected_caption}\n\n<blockquote>🔗 Here is your link:\n{share_link}</blockquote>"
+                else:
+                    text += f"📦 Batch contains {len(items)} items.\n\n🔗 Here is your link:\n{share_link}"
+                
                 if footer:
                     text += f"\n\n<blockquote>{footer}</blockquote>"
 
