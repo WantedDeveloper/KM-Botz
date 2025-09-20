@@ -343,11 +343,12 @@ class Database:
         return result.modified_count
 
     # ---------------- BATCH ----------------
-    async def add_batch(self, bot_id, file_ids: list):
+    async def add_batch(self, bot_id, file_ids: list, is_auto_post: bool = False):
         data = {
             "bot_id": int(bot_id),
             "file_ids": file_ids,
-            "date": datetime.utcnow()
+            "date": datetime.utcnow(),
+            "is_auto_post": is_auto_post
         }
         result = await self.batches.insert_one(data)
         return str(result.inserted_id)
