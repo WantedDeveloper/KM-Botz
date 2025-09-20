@@ -124,7 +124,7 @@ class Database:
                 'premium_user': [],
                 # Auto Delete
                 'auto_delete': False,
-                'auto_delete_time': 1,
+                'auto_delete_time': '1h',
                 'auto_delete_msg': script.AD_TXT,
                 # Forward Protect
                 'forward_protect': False,
@@ -173,7 +173,7 @@ class Database:
                 'premium_user': [],
                 # Auto Delete
                 'auto_delete': False,
-                'auto_delete_time': 1,
+                'auto_delete_time': '1h',
                 'auto_delete_msg': script.AD_TXT,
                 # Forward Protect
                 'forward_protect': False,
