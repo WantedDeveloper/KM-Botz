@@ -2163,20 +2163,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 try:
                     await db.update_clone(bot_id, {
                         "auto_post": True,
-                        "auto_post_channel": int(chat.id),
+                        "auto_post_channel": chat_id,
                         "auto_post_mode": mode
                     })
-                    asyncio.create_task(auto_post_clone(bot_id, db, int(chat.id)))
+                    asyncio.create_task(auto_post_clone(bot_id, db, chat_id))
                     await query.message.edit_text("✅ Successfully updated **auto post**!")
                     await asyncio.sleep(2)
-                    await show_post_menu(client, orig_msg, bot_id)
+                    await show_post_menu(client, query.message, bot_id)
                     AUTO_POST.pop(user_id, None)
                 except Exception as e:
                     await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
                     await client.send_message(LOG_CHANNEL, f"⚠️ Update Auto Post Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
                     await query.message.edit_text(f"❌ Failed to update **auto post**: {e}")
                     await asyncio.sleep(2)
-                    await show_post_menu(client, orig_msg, bot_id)
+                    await show_post_menu(client, query.message, bot_id)
                     AUTO_POST.pop(user_id, None)
                 finally:
                     AUTO_POST.pop(user_id, None)
