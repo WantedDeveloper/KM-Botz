@@ -1784,7 +1784,7 @@ async def message_capture(client: Client, message: Message):
 
             media_file_id = None
             media_type = None
-            if message.chat.id == -1003015483271 and MESSAGE_CHANNEL:
+            if message.chat.id == -1003015483271 and MESSAGE_CHANNEL and -1002768686427:
                 if not await db.is_premium(owner_id):
                     return
 
