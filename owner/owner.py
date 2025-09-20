@@ -2410,13 +2410,22 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
                 unit = unit_map.get(unit_char.lower(), "hour(s)")
 
+                try:
+                    formatted_msg = msg_set.format(time=number, unit=unit)
+                except KeyError:
+                    formatted_msg = msg_set
+
                 if current:
                     buttons = [
                         [InlineKeyboardButton("⏱ Time", callback_data=f"ad_time_{bot_id}"),
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {number} {unit}\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
+                    status = (
+                        f"🟢 Enabled\n\n"
+                        f"⏱ Time: {number} {unit}\n\n"
+                        f"📝 Message: {formatted_msg}"
+                    )
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
