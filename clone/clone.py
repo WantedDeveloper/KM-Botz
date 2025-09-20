@@ -718,9 +718,6 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
         if not clone_client:
             return
 
-        item = None
-        items = []
-
         while True:
             try:
                 fresh = await db.get_clone_by_id(bot_id)
@@ -732,6 +729,9 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                     return
 
                 mode = fresh.get("auto_post_mode", "single")
+
+                item = None
+                items = []
 
                 if mode == "single":
                     item = await db.pop_random_unposted_media(bot_id)
@@ -754,7 +754,7 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
                     share_link = f"https://t.me/{bot_username}?start=SINGLE-{outstr}"
 
                 elif mode == "batch":
-                    batch_size = random.randint(15, 150)
+                    batch_size = random.randint(10, 100)
                     for _ in range(batch_size):
                         item = await db.pop_random_unposted_media(bot_id)
                         if item:
