@@ -1976,7 +1976,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 ACCESS_TOKEN_VALIDITY[user_id] = (query.message, bot_id)
                 buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editatvalidity_{bot_id}')]]
                 await query.message.edit_text(
-                    text="⏱ Please provide the new **Access Token Validity** in **hours** (e.g., `24` for 1 day):",
+                    text="⏱ Please provide the new **Access Token Validity** in **Seconds/Minutes/hours** (e.g., `30s` for 30 second, `5m` for 5 minute, `1h` for 1 hour):",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
 
@@ -2277,7 +2277,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_POST_SLEEP[user_id] = (query.message, bot_id)
                 buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editapsleep_{bot_id}')]]
                 await query.message.edit_text(
-                    text="⏱ Please provide the new **Auto Post Sleep** in **hours** (e.g., `24` for 1 day):",
+                    text="⏱ Please provide the new **Auto Post Sleep** in **Seconds/Minutes/hours** (e.g., `30s` for 30 second, `5m` for 5 minute, `1h` for 1 hour):",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
 
@@ -2530,7 +2530,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_DELETE_TIME[user_id] = (query.message, bot_id)
                 buttons = [[InlineKeyboardButton('❌ Cancel', callback_data=f'cancel_editadtime_{bot_id}')]]
                 await query.message.edit_text(
-                    text="⏱ Please provide the new **Auto Delete Time** in **hours** (e.g., `24` for 1 day):",
+                    text="⏱ Please provide the new **Auto Delete Time** in **Seconds/Minutes/hours** (e.g., `30s` for 30 second, `5m` for 5 minute, `1h` for 1 hour):",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
 
