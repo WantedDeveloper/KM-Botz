@@ -510,7 +510,7 @@ async def start(client, message):
                     try:
                         await sts.edit_text(f"📤 Sending file {index}/{total_files}...")
 
-                        file = await db.get_file(db_file_id)
+                        file = await db.get_file_by_file_id(db_file_id, me.id)
                         if not file:
                             continue
 
