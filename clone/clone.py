@@ -338,6 +338,7 @@ async def start(client, message):
         buttons_data = clone.get("button", [])
         access_token = clone.get("access_token", False)
         tutorial_url = clone.get("access_token_tutorial", None)
+        auto_post_mode = clone.get("auto_post_mode", "single")
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
@@ -510,7 +511,11 @@ async def start(client, message):
                     try:
                         await sts.edit_text(f"📤 Sending file {index}/{total_files}...")
 
-                        file = await db.get_file_by_file_id(db_file_id, me.id)
+                        if auto_post_mode:
+                            file = await db.get_file_by_file_id(db_file_id, me.id)
+                        else:
+                            file = await db.get_file(db_file_id)
+
                         if not file:
                             continue
 
