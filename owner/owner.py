@@ -1151,7 +1151,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             "link_message_", "word_filter_", "wf_status_", "media_filter_", "mf_status_", "random_caption_", "rc_status_", "header_", "add_header_", "cancel_addheader_", "see_header_", "delete_header_", "footer_", "add_footer_", "cancel_addfooter_", "see_footer_", "delete_footer_",
             "force_subscribe_", "add_fsub_", "fsub_mode_", "cancel_addfsub_", "remove_fsub_",
             "access_token_", "at_status_", "cancel_at_", "at_validty_", "edit_atvalidity_", "cancel_editatvalidity_", "see_atvalidity_", "default_atvalidity_", "at_tutorial_", "add_attutorial_", "cancel_addattutorial_", "see_attutorial_", "delete_attutorial_",
-            "auto_post_", "ap_status_", "cancel_autopost_", "apimage", "add_apimage_", "cancel_addapimage_", "see_apimage_", "delete_apimage_", "ap_sleep_", "edit_apsleep_", "cancel_editapsleep_", "see_apsleep_", "default_apsleep_",
+            "auto_post_", "ap_status_", "ap_mode_", "cancel_autopost_", "apimage", "add_apimage_", "cancel_addapimage_", "see_apimage_", "delete_apimage_", "ap_sleep_", "edit_apsleep_", "cancel_editapsleep_", "see_apsleep_", "default_apsleep_",
             "premium_user_", "cancel_pu_", "add_pu_", "cancel_addpu_", "remove_premium_user_", "remove_pu_",
             "auto_delete_", "ad_status_", "ad_time_", "edit_adtime_", "cancel_editadtime_", "see_adtime_", "default_adtime_", "ad_message_", "edit_admessage_", "cancel_editadmessage_", "see_admessage_", "default_admessage_",
             "forward_protect_", "fp_status_",
@@ -1163,6 +1163,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
             bot_id = None
             pu_id = None
             mod_id = None
+            mode = None
+            chat_id = None
+            index = None
 
             if data.startswith("remove_pu_"):
                 _, _, bot_id, pu_id = data.split("_", 3)
@@ -1186,6 +1189,10 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 _, _, index, bot_id = data.split("_", 3)
                 action = "remove_fsub"
                 index = int(index)
+            elif data.startswith("ap_mode_"):
+                _, mode, bot_id, chat_id = data.split("_", 3)
+                chat_id = int(chat_id)
+                action = "ap_mode"
             else:
                 action, bot_id = data.rsplit("_", 1)
 
@@ -2138,6 +2145,39 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 AUTO_POST.pop(user_id, None)
                 await db.update_clone(bot_id, {"auto_post": False})
                 await show_post_menu(client, query.message, bot_id)
+
+            # Auto Post Mode
+            elif action == "ap_mode":
+                if not clone:
+                    return await query.answer("❌ Clone not found!", show_alert=True)
+
+                if not active:
+                    return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
+
+                if mode not in ["single", "batch"]:
+                    return await query.answer("❌ Invalid mode selected!", show_alert=True)
+
+                await query.message.edit_text("✏️ Updating **auto post**, please wait...")
+                try:
+                    await db.update_clone(bot_id, {
+                        "auto_post": True,
+                        "auto_post_channel": int(chat.id),
+                        "auto_post_mode": "batch"
+                    })
+                    asyncio.create_task(auto_post_clone(bot_id, db, int(chat.id)))
+                    await query.message.edit_text("✅ Successfully updated **auto post**!")
+                    await asyncio.sleep(2)
+                    await show_post_menu(client, orig_msg, bot_id)
+                    AUTO_POST.pop(user_id, None)
+                except Exception as e:
+                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
+                    await client.send_message(LOG_CHANNEL, f"⚠️ Update Auto Post Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
+                    await query.message.edit_text(f"❌ Failed to update **auto post**: {e}")
+                    await asyncio.sleep(2)
+                    await show_post_menu(client, orig_msg, bot_id)
+                    AUTO_POST.pop(user_id, None)
+                finally:
+                    AUTO_POST.pop(user_id, None)
 
             # Auto Post Image Menu
             elif action == "apimage":
@@ -3556,27 +3596,19 @@ async def message_capture(client: Client, message: Message):
                     AUTO_POST.pop(user_id, None)
                     return
 
-                await orig_msg.edit_text("✏️ Updating **auto post**, please wait...")
-                try:
-                    await db.update_clone(bot_id, {
-                        "auto_post": True,
-                        "auto_post_channel": int(chat.id)
-                    })
-                    asyncio.create_task(auto_post_clone(bot_id, db, int(chat.id)))
-                    await orig_msg.edit_text("✅ Successfully updated **auto post**!")
-                    await asyncio.sleep(2)
-                    await show_post_menu(client, orig_msg, bot_id)
-                    AUTO_POST.pop(user_id, None)
-                except Exception as e:
-                    await db.update_clone(bot_id, {"auto_post": False, "auto_post_channel": None})
-                    await client.send_message(LOG_CHANNEL, f"⚠️ Update Auto Post Error:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
-                    await orig_msg.edit_text(f"❌ Failed to update **auto post**: {e}")
-                    await asyncio.sleep(2)
-                    await show_post_menu(client, orig_msg, bot_id)
-                    AUTO_POST.pop(user_id, None)
-                finally:
-                    AUTO_POST.pop(user_id, None)
-                return
+                buttons = [
+                    [
+                        InlineKeyboardButton("📌 Single Mode", callback_data=f"ap_mode_single_{bot_id}_{chat.id}"),
+                        InlineKeyboardButton("📂 Batch Mode", callback_data=f"ap_mode_batch_{bot_id}_{chat.id}")
+                    ],
+                    [InlineKeyboardButton("⬅️ Back", callback_data=f"manage_{bot_id}")]
+                ]
+
+                await orig_msg.edit_text(
+                    f"✅ Channel detected: **{ch_name}**\n\n"
+                    "👉 Please select **Auto Post Mode**:",
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
     except Exception as e:
         await client.send_message(LOG_CHANNEL, f"⚠️ Unexpected Error in message_capture:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
         print(f"⚠️ Unexpected Error in message_capture: {e}")
