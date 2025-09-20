@@ -496,7 +496,7 @@ async def start(client, message):
 
                 batch = await db.get_batch(decode_file_id)
                 if not batch:
-                    continue
+                    return await message.reply("⚠️ Batch not found or expired.")
 
                 file_ids = batch.get("file_ids", [])
                 total_files = len(file_ids)
@@ -512,7 +512,7 @@ async def start(client, message):
 
                         file = await db.get_file(db_file_id)
                         if not file:
-                            return await message.reply("❌ File not found in database.")
+                            continue
 
                         file_id = file.get("file_id")
                         file_name = file.get("file_name") or "Media"
