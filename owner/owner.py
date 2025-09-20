@@ -2396,8 +2396,19 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
                 current = clone.get("auto_delete", False)
-                time_set = clone.get("auto_delete_time", 1)
+                time_set = str(clone.get("auto_delete_time", "1h"))
                 msg_set = clone.get("auto_delete_msg", script.AD_TXT)
+
+                num_str = "".join(filter(str.isdigit, time_set)) or "0"
+                unit_char = "".join(filter(str.isalpha, time_set)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
 
                 if current:
                     buttons = [
@@ -2405,7 +2416,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                         InlineKeyboardButton("📝 Message", callback_data=f"ad_message_{bot_id}"),
                         InlineKeyboardButton("❌ Disable", callback_data=f"ad_status_{bot_id}")]
                     ]
-                    status = f"🟢 Enabled\n\n⏱ Time: {time_set} hour\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
+                    status = f"🟢 Enabled\n\n⏱ Time: {number} {unit}\n\n📝 Message: {msg_set.format(time=f'{time_set}')}"
                 else:
                     buttons = [[InlineKeyboardButton("✅ Enable", callback_data=f"ad_status_{bot_id}")]]
                     status = "🔴 Disabled"
@@ -2482,9 +2493,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ad_time = clone.get("auto_delete_time", 1)
-                unit = "hour" if ad_time == 1 else "hours"
-                await query.answer(f"📝 Current Auto Delete Time:\n\n{ad_time} {unit}", show_alert=True)
+                ad_time = str(clone.get("auto_delete_time", "1h"))
+
+                num_str = "".join(filter(str.isdigit, ad_time)) or "0"
+                unit_char = "".join(filter(str.isalpha, ad_time)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Auto Delete Time:\n\n{number} {unit}", show_alert=True)
 
             # Default Auto Delete Time
             elif action == "default_adtime":
@@ -2494,7 +2516,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_delete_time": 1})
+                await db.update_clone(bot_id, {"auto_delete_time": "1h"})
                 await query.answer(f"🔄 Auto delete time reset to default.", show_alert=True)
 
             # Auto Delete Message Menu
@@ -3268,8 +3290,6 @@ async def message_capture(client: Client, message: Message):
                             moderators = clone.get("moderators", [])
                             moderators.append(content)
                             await db.update_clone(bot_id, {db_field: moderators})
-                        elif db_field in ["auto_post_sleep", "auto_delete_time"]:
-                            await db.update_clone(bot_id, {db_field: int(content)})
                         else:
                             await db.update_clone(bot_id, {db_field: content})
 
