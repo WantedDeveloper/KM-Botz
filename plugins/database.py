@@ -356,6 +356,13 @@ class Database:
     async def get_batch(self, batch_id):
         return await self.batches.find_one({"_id": ObjectId(batch_id)})
 
+    async def mark_all_batches_auto_post(self, bot_id: int):
+        result = await self.batches.update_many(
+            {"bot_id": int(bot_id)},
+            {"$set": {"is_auto_post": True}}
+        )
+        return result.modified_count
+
 db = Database(DB_URI, DB_NAME)
 
 class CloneDatabase:
