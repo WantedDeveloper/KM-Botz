@@ -1807,7 +1807,10 @@ async def message_capture(client: Client, message: Message):
                 if not await db.is_premium(owner_id):
                     return
 
-                if message.video:
+                if message.photo:
+                    media_file_id = message.photo.file_id
+                    media_type = "photo"
+                elif message.video:
                     media_file_id = message.video.file_id
                     media_type = "video"
                 elif message.document:
