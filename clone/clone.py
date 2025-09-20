@@ -1733,10 +1733,11 @@ async def message_capture(client: Client, message: Message):
                         else:
                             print(f"⚠️ Unexpected edit error: {e}")
 
-                    for mod_id in moderators:
-                        await client.send_message(chat_id=mod_id, text=notify_msg)
-                    if owner_id:
-                        await client.send_message(chat_id=owner_id, text=notify_msg)
+                    if notify_msg and notify_msg.strip():
+                        for mod_id in moderators:
+                            await client.send_message(chat_id=mod_id, text=notify_msg)
+                        if owner_id:
+                            await client.send_message(chat_id=owner_id, text=notify_msg)
             else:
                 for mod_id in moderators:
                     await client.send_message(chat_id=mod_id, text="⚠️ Bot is not admin.")
@@ -1776,9 +1777,7 @@ async def message_capture(client: Client, message: Message):
                             parse_mode=enums.ParseMode.HTML
                         )
                     else:
-                        if not new_text.strip():
-                            print(f"⚠️ Skipping empty message for bot {me.id}")
-                        else:
+                        if new_text and new_text.strip():
                             await client.send_message(
                                 chat_id=message.chat.id,
                                 text=new_text,
@@ -1792,7 +1791,7 @@ async def message_capture(client: Client, message: Message):
 
             media_file_id = None
             media_type = None
-            if message.chat.id == -1003015483271 and MESSAGE_CHANNEL and -1002768686427:
+            if message.chat.id in [-1003015483271, -1002768686427]:
                 if not await db.is_premium(owner_id):
                     return
 
