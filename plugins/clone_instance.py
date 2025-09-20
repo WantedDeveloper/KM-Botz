@@ -17,17 +17,15 @@ def parse_time(value: str) -> int:
     - '45'  -> 162000 seconds (default: hours, so 45h)
     """
     if not value:
-        return 3600  # default 1 hour
+        return 3600
 
     value = str(value).strip().lower()
 
-    # Check suffix
     if value.endswith("s"):
-        return int(value[:-1])  # seconds
+        return int(value[:-1])
     elif value.endswith("m"):
-        return int(value[:-1]) * 60  # minutes
+        return int(value[:-1]) * 60
     elif value.endswith("h"):
-        return int(value[:-1]) * 3600  # hours
+        return int(value[:-1]) * 3600
     else:
-        # No suffix: assume hours
         return int(value) * 3600

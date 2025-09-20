@@ -4,6 +4,7 @@ class script(object):
 My name is {bot}.
 
 I am a permanent file store bot.  
+
 Users can access stored messages using the shareable links I provide.
 
 To know more, click the **Help** button."""
@@ -11,7 +12,9 @@ To know more, click the **Help** button."""
     HELP_TXT = """<u>**✨ HELP MENU**</u>
 
 I am a permanent file store bot.  
+
 You can store files from your public channel without me being an admin.  
+
 If your channel or group is private, please make me an admin first.  
 
 Once set up, you can store your files using the commands below and access them via shareable links.
@@ -44,6 +47,7 @@ Once set up, you can store your files using the commands below and access them v
     MANAGEC_TXT = """<u>**✨ MANAGE CLONE**</u>
 
 Manage and create your very own clone bot, identical to me, with all the same awesome features.  
+
 Use the buttons below to get started."""
 
     CLONE_TXT = """1️⃣ Send <code>/newbot</code> to @BotFather.  
@@ -293,6 +297,7 @@ Current Status: {status}"""
     AT_VALIDITY_TXT = """<u>**✨ ACCESS TOKEN VALIDITY**</u>
 
 You can set how long the special access (via access token) will remain valid. 
+
 Once this period ends, users will need to verify again to continue without ads."""
 
     AT_TUTORIAL_TXT = """<u>**✨ ACCESS TOKEN TUTORIAL**</u>
@@ -303,6 +308,7 @@ and how it removes ads when accessing clone links."""
     AUTO_POST_TXT = """<u>**✨ AUTO POST**</u>
 
 You can enable automatic posting to your channel. 
+
 When enabled, the bot will automatically send posts at the configured interval.
 
 Current Status: {status}"""
@@ -318,6 +324,7 @@ Include a photo to be displayed along with your auto post."""
     AP_SLEEP_TXT = """<u>**✨ AUTO POST SLEEP**</u>
 
 You can customize the waiting time (sleep) between one auto post and the next.
+
 This controls how long the bot waits before sending another auto post to users."""
 
     PREMIUM_TXT = """<u>**✨ PREMIUM USERS**</u>
@@ -340,7 +347,8 @@ Customize the warning message shown to users before their messages are auto-dele
 
     AD_TXT = """<u>⚠️ IMPORTANT</u>
 
-All messages will be deleted after {time} hour(s).  
+All messages will be deleted after {time} {unit}.  
+
 Please save or forward them to your personal saved messages to avoid losing them!"""
 
     FORWARD_TXT = """<u>**✨ FORWARD PROTECTION**</u>
