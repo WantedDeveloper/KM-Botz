@@ -208,6 +208,9 @@ async def start(client, message):
         if not clone:
             return
 
+        await db.update_clone(me.id, {"access_token_validity": "24h"})
+        await db.update_clone(me.id, {"auto_post_sleep": "1h"})
+
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
             await clonedb.add_user(me.id, message.from_user.id)
@@ -789,8 +792,7 @@ async def auto_post_clone(bot_id: int, db, target_channel: int):
 
                 await db.mark_media_posted(item["_id"], bot_id)
 
-                hours = int(fresh.get("auto_post_time", 1))
-                sleep_time = hours * 3600
+                sleep_time = parse_time(fresh.get("auto_post_sleep", "1h"))
                 await asyncio.sleep(sleep_time)
             except Exception as e:
                 if 'item' in locals() and item:
