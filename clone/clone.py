@@ -208,8 +208,7 @@ async def start(client, message):
         if not clone:
             return
 
-        await db.update_clone(me.id, {"access_token_validity": "24h"})
-        await db.update_clone(me.id, {"auto_post_sleep": "1h"})
+        #await db.update_clone(bot_id, {"auto_delete_time": "1h"})
 
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
