@@ -168,9 +168,9 @@ def get_size(size):
         size /= 1024.0
     return "%.2f %s" % (size, units[i])
 
-async def auto_delete_message(client, msg_to_delete, notice_msg, hours):
+async def auto_delete_message(client, msg_to_delete, notice_msg, time):
     try:
-        await asyncio.sleep(hours * 3600)
+        await asyncio.sleep(time)
 
         try:
             await msg_to_delete.delete()
@@ -208,7 +208,7 @@ async def start(client, message):
         if not clone:
             return
 
-        #await db.update_clone(bot_id, {"auto_delete_time": "1h"})
+        await db.update_clone(bot_id, {"auto_delete_time": "1h"})
 
         # --- Track new users ---
         if not await clonedb.is_user_exist(me.id, message.from_user.id):
@@ -345,9 +345,21 @@ async def start(client, message):
         premium = clone.get("premium", [])
         premium_upi = clone.get("premium_upi", None)
         auto_delete = clone.get("auto_delete", False)
-        auto_delete_time = clone.get("auto_delete_time", 1)
+        auto_delete_time = str(clone.get("auto_delete_time", "1h"))
+        auto_delete_time2 = parse_time(clone.get("auto_delete_time", "1h"))
         auto_delete_msg = clone.get('auto_delete_msg', script.AD_TXT)
         forward_protect = clone.get("forward_protect", False)
+
+        num_str = "".join(filter(str.isdigit, auto_delete_time)) or "0"
+        unit_char = "".join(filter(str.isalpha, auto_delete_time)) or "h"
+
+        try:
+            number = int(num_str)
+        except:
+            number = 0
+
+        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         data = message.command[1]
         try:
@@ -448,10 +460,10 @@ async def start(client, message):
 
                 if sent_msg and auto_delete:
                     notice = await sent_msg.reply(
-                    auto_delete_msg.format(time=auto_delete_time),
+                    auto_delete_msg.format(time=number, unit=unit),
                     quote=True
                 )
-                asyncio.create_task(auto_delete_message(client, sent_msg, notice, auto_delete_time))
+                asyncio.create_task(auto_delete_message(client, sent_msg, notice, auto_delete_time2))
             except UserIsBlocked:
                 print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
                 return
@@ -570,10 +582,10 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await message.reply(
-                        auto_delete_msg.format(time=auto_delete_time),
+                        auto_delete_msg.format(time=number, unit=unit),
                         quote=True
                     )
-                    asyncio.create_task(auto_delete_message(client, sent_files, k, auto_delete_time))
+                    asyncio.create_task(auto_delete_message(client, sent_files, k, auto_delete_time2))
 
                 await sts.edit_text(f"✅ Batch completed!\n\nTotal files sent: **{total_files}**")
                 await asyncio.sleep(5)
@@ -651,10 +663,10 @@ async def start(client, message):
 
                 if auto_delete:
                     k = await msg.reply(
-                        auto_delete_msg.format(time=auto_delete_time),
+                        auto_delete_msg.format(time=number, unit=unit),
                         quote=True
                     )
-                    asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time))
+                    asyncio.create_task(auto_delete_message(client, msg, k, auto_delete_time2))
                 return
             except UserIsBlocked:
                 print(f"⚠️ User {message.from_user.id} blocked the bot. Skipping batch...")
