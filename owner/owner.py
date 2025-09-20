@@ -3608,6 +3608,9 @@ async def message_capture(client: Client, message: Message):
                     "👉 Please select **Auto Post Mode**:",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
+
+                AUTO_POST.pop(user_id, None)
+                return
     except Exception as e:
         await client.send_message(LOG_CHANNEL, f"⚠️ Unexpected Error in message_capture:\n\n<code>{e}</code>\n\nKindly check this message to get assistance.")
         print(f"⚠️ Unexpected Error in message_capture: {e}")
