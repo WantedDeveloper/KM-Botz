@@ -111,7 +111,7 @@ class Database:
                 'access_token': False,
                 'shorten_link': None,
                 'shorten_api': None,
-                'access_token_validity': 24,
+                'access_token_validity': '24h',
                 'access_token_renew_log': {},
                 'access_token_tutorial': None,
                 # Auto Post
@@ -160,7 +160,7 @@ class Database:
                 'access_token': False,
                 'shorten_link': None,
                 'shorten_api': None,
-                'access_token_validity': 24,
+                'access_token_validity': '24h',
                 'access_token_renew_log': {},
                 'access_token_tutorial': None,
                 # Auto Post
