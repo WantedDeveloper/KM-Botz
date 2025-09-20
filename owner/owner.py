@@ -849,7 +849,18 @@ async def show_post_menu(client, message, bot_id):
         clone = await db.get_clone_by_id(bot_id)
         current = clone.get("auto_post", False)
         image = clone.get("auto_post_image", None)
-        sleep = clone.get("auto_post_sleep", 1)
+        sleep = str(clone.get("auto_post_sleep", "1h"))
+
+        num_str = "".join(filter(str.isdigit, sleep)) or "0"
+        unit_char = "".join(filter(str.isalpha, sleep)) or "h"
+
+        try:
+            number = int(num_str)
+        except:
+            number = 0
+
+        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         if current:
             buttons = [
@@ -860,7 +871,7 @@ async def show_post_menu(client, message, bot_id):
 
             status = (
                 f"🟢 Enabled\n\n"
-                f"⏱ Sleep: {sleep} hour\n\n"
+                f"⏱ Sleep: {number} {unit}\n\n"
             )
         else:
             buttons = []
@@ -1993,7 +2004,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"access_token_validity": 24})
+                await db.update_clone(bot_id, {"access_token_validity": "24h"})
                 await query.answer(f"🔄 Access token validity reset to default.", show_alert=True)
 
             # Access Token Tutorial
@@ -2241,9 +2252,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                ap_sleep = clone.get("auto_post_sleep", 1)
-                unit = "hour" if ap_sleep == 1 else "hours"
-                await query.answer(f"📝 Current Auto Post Sleep:\n\n{ap_sleep} {unit}", show_alert=True)
+                ap_sleep = str(clone.get("auto_post_sleep", "1h"))
+
+                num_str = "".join(filter(str.isdigit, ap_sleep)) or "0"
+                unit_char = "".join(filter(str.isalpha, ap_sleep)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Auto Post Sleep:\n\n{number} {unit}", show_alert=True)
 
             # Default Auto Post Sleep
             elif action == "default_apsleep":
@@ -2253,7 +2275,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                await db.update_clone(bot_id, {"auto_post_sleep": 1})
+                await db.update_clone(bot_id, {"auto_post_sleep": "1h"})
                 await query.answer(f"🔄 Auto post sleep reset to default.", show_alert=True)
 
             # Premium User
