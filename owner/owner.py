@@ -751,7 +751,7 @@ async def show_token_menu(client, message, bot_id):
         current = clone.get("access_token", False)
         shorten_link = clone.get("shorten_link", None)
         shorten_api = clone.get("shorten_api", None)
-        validity = clone.get("access_token_validity", 24)
+        validity = clone.get("access_token_validity", "24h")
         tutorial = clone.get("access_token_tutorial", None)
         renew_log = clone.get("access_token_renew_log", {})
 
@@ -774,7 +774,7 @@ async def show_token_menu(client, message, bot_id):
                 f"🟢 Enabled\n\n"
                 f"🔗 Shorten Link: {shorten_link or 'Not Set'}\n"
                 f"🛠 Shorten API: {shorten_api or 'Not Set'}\n"
-                f"⏱ Validity: {validity} hour\n"
+                f"⏱ Validity: {validity}\n"
                 f"{text_msg}"
                 f"🔄 Renewed Today: {today_count} times\n\n"
             )
@@ -1959,9 +1959,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
 
-                at_validity = clone.get("access_token_validity", 24)
-                unit = "hour" if at_validity == 24 else "hours"
-                await query.answer(f"📝 Current Access Token Validity:\n\n{at_validity} {unit}", show_alert=True)
+                at_validity = str(clone.get("access_token_validity", "24h"))
+
+                num_str = "".join(filter(str.isdigit, at_validity)) or "0"
+                unit_char = "".join(filter(str.isalpha, at_validity)) or "h"
+
+                try:
+                    number = int(num_str)
+                except:
+                    number = 0
+
+                unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+                unit = unit_map.get(unit_char.lower(), "hour(s)")
+
+                await query.answer(f"📝 Current Access Token Validity:\n\n{number} {unit}", show_alert=True)
 
             # Default Access Token Validity
             elif action == "default_atvalidity":
