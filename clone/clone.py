@@ -1519,13 +1519,21 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 await query.answer("⚠️ Invalid approve data.", show_alert=True)
                 return
 
-            expiry = datetime.utcnow() + timedelta(days=days)
-            premium_data = {"user_id": user_id, "expiry": expiry.timestamp()}
-
             premium_users = clone.get("premium_user", [])
-            premium_users = [u for u in premium_users if u["user_id"] != user_id]
-            premium_users.append(premium_data)
-            await db.update_clone(me.id, {"premium_user": premium_users})
+
+            normalized = []
+            for u in premium_users:
+                if isinstance(u, dict):
+                    normalized.append(u)
+                else:
+                    normalized.append({"user_id": int(u), "expiry": 0})
+
+            normalized = [u for u in normalized if u["user_id"] != user_id]
+
+            expiry = datetime.utcnow() + timedelta(days=days)
+            normalized.append({"user_id": user_id, "expiry": expiry.timestamp()})
+
+            await db.update_clone(me.id, {"premium_user": normalized})
 
             await client.send_message(
                 user_id,
@@ -1836,7 +1844,7 @@ async def message_capture(client: Client, message: Message):
                         )
                         print(f"✅ Saved media: {media_type} ({media_file_id}) for bot {me.id}")
 
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.3)
     except Exception as e:
         await client.send_message(
             LOG_CHANNEL,
