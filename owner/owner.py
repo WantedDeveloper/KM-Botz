@@ -937,14 +937,18 @@ async def show_premium_menu(client, message, bot_id):
 
         pu_list_lines = []
         for pu in premium_user:
-            try:
-                user_id_int = int(pu)
-            except ValueError:
-                user_id_int = pu
+            if isinstance(pu, dict):
+                user_id_int = pu.get("id")
+                name = pu.get("name", str(user_id_int))
+            else:
+                try:
+                    user_id_int = int(pu)
+                except ValueError:
+                    user_id_int = pu
+                user = await db.col.find_one({"id": user_id_int})
+                name = user.get("name") if user else str(user_id_int)
 
-            user = await db.col.find_one({"id": user_id_int})
-            name = user.get("name") if user else pu
-            pu_list_lines.append(f"👤 {name} (`{pu}`)")
+            pu_list_lines.append(f"👤 {name} (`{user_id_int}`)")
 
         pu_list_text = "\n".join(pu_list_lines)
 
