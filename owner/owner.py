@@ -962,6 +962,7 @@ async def show_premium_menu(client, message, bot_id):
 
         await message.edit_text(text=text, reply_markup=InlineKeyboardMarkup(buttons))
     except Exception as e:
+        print(f"⚠️ Show Premium User Menu Error: {e}")
         await client.send_message(
             LOG_CHANNEL,
             f"⚠️ Show Premium User Menu Error:\n<code>{e}</code>\nClone Data: {clone}\n\nKindly check this message to get assistance."
