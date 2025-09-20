@@ -751,12 +751,23 @@ async def show_token_menu(client, message, bot_id):
         current = clone.get("access_token", False)
         shorten_link = clone.get("shorten_link", None)
         shorten_api = clone.get("shorten_api", None)
-        validity = clone.get("access_token_validity", "24h")
+        validity = str(clone.get("access_token_validity", "24h"))
         tutorial = clone.get("access_token_tutorial", None)
         renew_log = clone.get("access_token_renew_log", {})
 
         today = datetime.now().strftime("%Y-%m-%d")
         today_count = renew_log.get(today, 0)
+
+        num_str = "".join(filter(str.isdigit, validity)) or "0"
+        unit_char = "".join(filter(str.isalpha, validity)) or "h"
+
+        try:
+            number = int(num_str)
+        except:
+            number = 0
+
+        unit_map = {"h": "hour(s)", "m": "minute(s)", "s": "second(s)"}
+        unit = unit_map.get(unit_char.lower(), "hour(s)")
 
         if current:
             buttons = [
@@ -774,7 +785,7 @@ async def show_token_menu(client, message, bot_id):
                 f"🟢 Enabled\n\n"
                 f"🔗 Shorten Link: {shorten_link or 'Not Set'}\n"
                 f"🛠 Shorten API: {shorten_api or 'Not Set'}\n"
-                f"⏱ Validity: {validity}\n"
+                f"⏱ Validity: {number} {unit}\n"
                 f"{text_msg}"
                 f"🔄 Renewed Today: {today_count} times\n\n"
             )
@@ -3235,7 +3246,7 @@ async def message_capture(client: Client, message: Message):
                             moderators = clone.get("moderators", [])
                             moderators.append(content)
                             await db.update_clone(bot_id, {db_field: moderators})
-                        elif db_field in ["access_token_validity", "auto_post_sleep", "auto_delete_time"]:
+                        elif db_field in ["auto_post_sleep", "auto_delete_time"]:
                             await db.update_clone(bot_id, {db_field: int(content)})
                         else:
                             await db.update_clone(bot_id, {db_field: content})
