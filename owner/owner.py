@@ -1190,7 +1190,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 action = "remove_fsub"
                 index = int(index)
             elif data.startswith("ap_mode_"):
-                _, mode, bot_id, chat_id = data.split("_", 3)
+                mode, bot_id, chat_id = data[len("ap_mode_"):].rsplit("_", 1)
+                if mode not in ["single", "batch"]:
+                    mode = "single"
                 chat_id = int(chat_id)
                 action = "ap_mode"
             else:
@@ -2153,9 +2155,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
                 if not active:
                     return await query.answer("⚠️ This bot is deactivate. Activate first!", show_alert=True)
-
-                if mode not in ["single", "batch"]:
-                    return await query.answer("❌ Invalid mode selected!", show_alert=True)
 
                 await query.message.edit_text("✏️ Updating **auto post**, please wait...")
                 try:
