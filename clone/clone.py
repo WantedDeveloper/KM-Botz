@@ -10,7 +10,7 @@ from pyrogram.file_id import FileId
 from struct import pack
 from plugins.config import *
 from plugins.database import db, clonedb
-from plugins.clone_instance import get_client
+from plugins.clone_instance import get_client, parse_time
 from plugins.script import script
 
 logger = logging.getLogger(__name__)
@@ -146,8 +146,8 @@ async def verify_user(client, userid, token):
     if not clone:
         return
 
-    validity_hours = clone.get("access_token_validity", 24)
-    VERIFIED[userid] = datetime.now() + timedelta(hours=validity_hours)
+    validity_hours = parse_time(clone.get("access_token_validity", "24h"))
+    VERIFIED[userid] = datetime.now() + timedelta(seconds=validity_hours)
 
 async def check_verification(client, userid):
     userid = int(userid)
